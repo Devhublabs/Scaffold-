@@ -1,16 +1,39 @@
-# React + Vite
+# Scaffold
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Real-time collaborative drawing web app for manga/comic artists — draw together live, with geometry-based shape cleanup that preserves your own linework. No AI-generated art.
 
-Currently, two official plugins are available:
+Built by [DevHub Labs](https://github.com/Devhublabs).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+Multiple artists draw on the same canvas at the same time, from mouse, touch, or stylus, and talk to each other by voice while they work. Rough shapes (circles, lines, rectangles) snap into clean versions of your own stroke — no AI generating new art, just geometry cleanup. Your style stays yours.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Why
 
-## Expanding the ESLint configuration
+Manga/comic art involves a lot of slow, invisible prep work — construction shapes, proportion guides, panel layout — before real linework starts. Most "AI drawing tools" solve this by generating finished art for you, which kills originality. Scaffold only touches structure, never style.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Tech Stack
+
+**Frontend:** React, Fabric.js, Pointer Events API, Socket.io client
+**Backend:** FastAPI (Python) for real-time sync, Node.js/Express for auth + export
+**Database:** MongoDB
+**Voice:** WebRTC (Daily.co / Agora)
+
+## Project Structure
+
+See `/docs` for the full PRD, including features, design system, and backend API contract.
+frontend/          — React app (canvas, UI, screens)
+backend-python/     — Real-time sync, rooms, Co-Artist backend
+backend-node/       — Auth, security, export service
+docs/               — Full PRD and design references
+## Status
+
+🚧 In active development — v1 in progress. Not production-ready.
+
+## Team
+
+Built by DevHub Labs.
+
+## License
+
+TBD
