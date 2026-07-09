@@ -80,30 +80,37 @@ Scaffold/
 │
 ├── frontend/
 │   ├── public/
-│   └── src/
-│       ├── assets/
-│       ├── canvas/
-│       ├── components/
-│       ├── pages/
-│       ├── layouts/
-│       ├── hooks/
-│       ├── context/
-│       ├── services/
-│       ├── socket/
-│       ├── utils/
-│       ├── styles/
-│       └── constants/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── canvas/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── layouts/
+│   │   ├── hooks/
+│   │   ├── context/
+│   │   ├── services/
+│   │   ├── socket/
+│   │   ├── utils/
+│   │   ├── styles/
+│   │   ├── constants/
+│   │   └── icons/
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── vite.config.js
+│   ├── eslint.config.js
+│   └── .gitignore
 │
 ├── backend-python/
-│   ├── api/
-│   ├── sockets/
-│   ├── rooms/
-│   ├── models/
-│   ├── database/
-│   ├── services/
-│   ├── utils/
-│   ├── coartist/
-│   └── tests/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── sockets/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── database/
+│   │   └── utils/
+│   ├── tests/
+│   └── requirements.txt
 │
 ├── backend-node/
 │   ├── routes/
@@ -112,12 +119,17 @@ Scaffold/
 │   ├── services/
 │   ├── utils/
 │   ├── config/
-│   └── tests/
+│   ├── exports/
+│   ├── package.json
+│   └── .gitignore
 │
 ├── docs/
-├── assets/
-├── scripts/
-└── .github/
+├── .github/
+│   └── workflows/
+│
+├── README.md
+├── .gitignore
+└── LICENSE
 ```
 
 ---
