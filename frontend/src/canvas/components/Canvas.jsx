@@ -30,7 +30,7 @@ function DrawingCanvas() {
     });
 
     const brush = new PressureBrush(canvas);
-    brush.color = "#b82a2a";
+    brush.color = "#000000";
     brush.width = 3;
     canvas.freeDrawingBrush = brush;
 
