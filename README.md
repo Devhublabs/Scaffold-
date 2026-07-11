@@ -58,6 +58,51 @@ using geometry fitting instead of AI.
 **Voice**
 - WebRTC (Daily.co / Agora)
 
+## Getting Started
+
+The entire stack runs locally with Docker, so you don't need Node, Python, or MongoDB installed on your machine — only [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+### Run the whole project
+
+From the repository root:
+
+```bash
+docker-compose up --build
+```
+
+This builds and starts every service. The first build takes a few minutes; later runs are cached and much faster. Press `Ctrl+C` to stop, or start in the background with `docker-compose up --build -d` (then `docker-compose down` to stop).
+
+### Services & ports
+
+| Service          | URL                         | Port    | Stack                          |
+| ---------------- | --------------------------- | ------- | ------------------------------ |
+| frontend         | http://localhost:5173       | `5173`  | React 19 + Vite                |
+| backend-python   | http://localhost:8000       | `8000`  | FastAPI + Socket.IO            |
+| backend-node     | http://localhost:4000       | `4000`  | Express (auth, JWT, export)    |
+| mongo            | mongodb://localhost:27017   | `27017` | MongoDB 7                      |
+
+Quick sanity check that the backends are up: open <http://localhost:8000> (FastAPI) and <http://localhost:4000/health> (Express).
+
+### Environment variables
+
+**No `.env` file is required to boot** — development defaults are baked into `docker-compose.yml`. To override them (for example, to set a real `JWT_SECRET`), copy the example file at the repo root and edit it:
+
+```bash
+cp .env.example .env
+```
+
+| Variable      | Used by        | Default                        |
+| ------------- | -------------- | ------------------------------ |
+| `JWT_SECRET`  | backend-node   | `dev-secret-change-me`         |
+| `MONGO_URI`   | backend-node   | `mongodb://mongo:27017/ucdp`   |
+
+`.env` is git-ignored, so local secrets are never committed.
+
+### Notes for development
+
+- Each service's source folder is mounted into its container, so saving a file hot-reloads that service (Vite HMR for the frontend, `nodemon` for backend-node, `uvicorn --reload` for backend-python).
+- `backend-node` currently ships a **minimal Express server** exposing only `/health`. Build authentication, JWT, and the export service on top of `backend-node/server.js`.
+
 ## Repository Structure
 
 ```
