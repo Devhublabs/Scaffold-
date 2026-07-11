@@ -23,10 +23,26 @@ def register_events(sio):
         join_room(room_id, user_id, sid)
         await sio.enter_room(sid, room_id)
 
-        # Tell everyone in the room someone joined
         await sio.emit("user_joined", {
             "userId": user_id,
             "users": list(get_room_users(room_id).keys())
         }, room=room_id)
 
         print(f"[ROOM] Users in {room_id}: {get_room_users(room_id)}")
+
+    @sio.event
+    async def cursor(sid, data):
+        room_id = data.get("roomId")
+        user_id = data.get("userId")
+        x = data.get("x")
+        y = data.get("y")
+
+        if not all([room_id, user_id, x is not None, y is not None]):
+            return
+
+        # Broadcast to everyone in room EXCEPT the sender
+        await sio.emit("cursor", {
+            "userId": user_id,
+            "x": x,
+            "y": y
+        }, room=room_id, skip_sid=sid)
