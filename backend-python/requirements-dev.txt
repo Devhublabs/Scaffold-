@@ -1,0 +1,9 @@
+# Test / dev dependencies — NOT installed into the server image.
+# Install locally alongside the runtime deps:
+#   pip install -r requirements.txt -r requirements-dev.txt
+#
+# Unit tests need only pytest; the integration tests additionally need
+# aiohttp (the python-socketio async client transport) and a running stack.
+pytest
+pytest-asyncio
+aiohttp
