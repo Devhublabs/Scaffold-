@@ -6,9 +6,10 @@ late joiners.
 
     pytest -m integration
 
-Each test uses a unique room id so persisted strokes never collide across runs.
+These wait on actual delivered events (via the `wait_until` fixture) rather than
+fixed sleeps, so they don't flake under load. Each test uses a unique room id so
+persisted strokes never collide across runs.
 """
-import asyncio
 import uuid
 
 import pytest
@@ -19,16 +20,37 @@ socketio = pytest.importorskip("socketio")
 SERVER_URL = "http://localhost:8000"
 
 
+def _members_listener(store):
+    """Handler that records the room membership from each `user_joined` event."""
+    async def _on_user_joined(data):
+        store["users"] = data.get("users", [])
+    return _on_user_joined
+
+
 @pytest.mark.integration
-async def test_stroke_is_persisted_and_replayed_to_late_joiner():
+async def test_stroke_is_persisted_and_replayed_to_late_joiner(wait_until):
     room = f"it_persist_{uuid.uuid4().hex[:8]}"
 
-    # First client joins and draws a stroke, then leaves entirely.
-    a = socketio.AsyncClient()
+    a = socketio.AsyncClient()  # draws the stroke
+    b = socketio.AsyncClient()  # witness — its receipt proves the DB save finished
+    c = socketio.AsyncClient()  # the late joiner
+
+    a_members = {}
+    b_got_stroke = []
+
+    a.on("user_joined", _members_listener(a_members))
+
+    @b.on("stroke")
+    async def _b_stroke(data):
+        b_got_stroke.append(data)
+
     try:
         await a.connect(SERVER_URL)
+        await b.connect(SERVER_URL)
         await a.emit("join_room_event", {"roomId": room, "userId": "user_A"})
-        await asyncio.sleep(0.3)
+        await b.emit("join_room_event", {"roomId": room, "userId": "user_B"})
+        assert await wait_until(lambda: set(a_members.get("users", [])) == {"user_A", "user_B"})
+
         await a.emit("stroke", {
             "roomId": room,
             "userId": "user_A",
@@ -36,28 +58,28 @@ async def test_stroke_is_persisted_and_replayed_to_late_joiner():
             "color": "#123456",
             "width": 5,
         })
-        await asyncio.sleep(0.6)  # let the server persist to Mongo
+        # The handler saves to Mongo BEFORE broadcasting, so B receiving the
+        # stroke deterministically means it is already persisted.
+        assert await wait_until(lambda: len(b_got_stroke) >= 1)
     finally:
         await a.disconnect()
-
-    # A brand-new client joins the same room and should be replayed the stroke.
-    b = socketio.AsyncClient()
-    got_state = asyncio.Event()
-    received = {}
-
-    @b.on("canvas_state")
-    async def _on_state(data):
-        received["data"] = data
-        got_state.set()
-
-    try:
-        await b.connect(SERVER_URL)
-        await b.emit("join_room_event", {"roomId": room, "userId": "user_B"})
-        await asyncio.wait_for(got_state.wait(), timeout=3)
-    finally:
         await b.disconnect()
 
-    strokes = received["data"]["strokes"]
+    # A brand-new client joins the same room and should be replayed the stroke.
+    c_state = {}
+
+    @c.on("canvas_state")
+    async def _c_state(data):
+        c_state["data"] = data
+
+    try:
+        await c.connect(SERVER_URL)
+        await c.emit("join_room_event", {"roomId": room, "userId": "user_C"})
+        assert await wait_until(lambda: "data" in c_state)
+    finally:
+        await c.disconnect()
+
+    strokes = c_state["data"]["strokes"]
     assert len(strokes) >= 1
     latest = strokes[-1]
     assert latest["roomId"] == room
@@ -68,20 +90,23 @@ async def test_stroke_is_persisted_and_replayed_to_late_joiner():
 
 
 @pytest.mark.integration
-async def test_stroke_is_broadcast_to_others_but_not_sender():
+async def test_stroke_is_broadcast_to_others_but_not_sender(wait_until):
     room = f"it_stroke_bc_{uuid.uuid4().hex[:8]}"
     a = socketio.AsyncClient()
     b = socketio.AsyncClient()
 
+    b_members = {}
     b_received = []
     a_received_own = []
 
+    b.on("user_joined", _members_listener(b_members))
+
     @a.on("stroke")
-    async def _on_a(data):
-        a_received_own.append(data)  # must not fire — skip_sid excludes the sender
+    async def _a_stroke(data):
+        a_received_own.append(data)  # must never fire — skip_sid excludes the sender
 
     @b.on("stroke")
-    async def _on_b(data):
+    async def _b_stroke(data):
         b_received.append(data)
 
     try:
@@ -89,15 +114,14 @@ async def test_stroke_is_broadcast_to_others_but_not_sender():
         await b.connect(SERVER_URL)
         await a.emit("join_room_event", {"roomId": room, "userId": "user_A"})
         await b.emit("join_room_event", {"roomId": room, "userId": "user_B"})
-        await asyncio.sleep(0.4)
+        assert await wait_until(lambda: set(b_members.get("users", [])) == {"user_A", "user_B"})
 
         await a.emit("stroke", {
             "roomId": room, "userId": "user_A",
             "points": [[1, 2]], "color": "#0a0a0a", "width": 2,
         })
-        await asyncio.sleep(0.5)
+        assert await wait_until(lambda: len(b_received) >= 1)
 
-        assert len(b_received) == 1
         assert b_received[0]["userId"] == "user_A"
         assert b_received[0]["points"] == [[1, 2]]
         assert b_received[0]["color"] == "#0a0a0a"
