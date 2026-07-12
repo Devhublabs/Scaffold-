@@ -71,3 +71,18 @@ def register_events(sio):
             "width": data.get("width", 3),
             "pressures": data.get("pressures", [])
         }, room=room_id, skip_sid=sid)
+
+    @sio.event
+    async def co_artist_shapes(sid, data):
+        room_id = data.get("roomId")
+        user_id = data.get("userId")
+
+        if not room_id or not user_id:
+            return
+
+        # Broadcast the shapes payload to everyone else in the room
+        await sio.emit("co_artist_shapes", {
+            "userId": user_id,
+            "payload": data.get("payload")
+        }, room=room_id, skip_sid=sid)
+

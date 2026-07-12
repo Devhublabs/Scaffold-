@@ -9,6 +9,7 @@ app = FastAPI()
 
 app.include_router(voice_router, prefix="/api")
 app.include_router(co_artist_router, prefix="/api")
+
 register_events(sio)
 
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
