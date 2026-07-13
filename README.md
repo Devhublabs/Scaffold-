@@ -278,11 +278,64 @@ Current milestone:
 - ✅ React + Fabric.js canvas
 - ✅ Basic drawing engine
 - ✅ Pointer Events integration
-- 🚧 Pressure-sensitive brush
-- ⏳ Layers
-- ⏳ Collaboration
+- ✅ Pressure-sensitive brush
+- ✅ Eraser brush
+- ✅ Logical layers v1
+- ✅ Global undo / redo v1
+- 🚧 Collaboration
 - ⏳ Voice
 - ⏳ Snap-to-Shape
+
+### Frontend Progress Update - July 13, 2026
+
+Obi's frontend canvas work now includes:
+
+- Pressure-sensitive pencil and pen brushes using Fabric.js Pointer Events.
+- Eraser brush that draws with the current canvas background color.
+- Brush switching between pencil, pen, and eraser.
+- Logical layer tracking through `LayersContext`.
+- Verified `Sketch` layer object tracking: drawing a stroke adds the Fabric object to the active layer.
+- Basic global undo / redo stack for v1.
+- Singleton Socket.IO client in `frontend/src/socket/socket.js`.
+- Canvas emits `join_room_event` to the Python backend when the canvas loads.
+- Canvas emits throttled `cursor` events during pointer movement.
+- Canvas emits `stroke` events after Fabric fires `path:created`.
+- Canvas listens for `user_joined`, `cursor`, `stroke`, and `canvas_state`.
+- Incoming remote cursors render as labeled cursor dots.
+- Incoming remote strokes replay onto the Fabric canvas.
+
+Current frontend development placeholders:
+
+- `roomId` is hardcoded as `abc123`.
+- `userId` is generated in `sessionStorage` as `user_xxxxx`.
+- `authToken` is currently `dev-token`.
+- These should be replaced once the room/auth flow is ready.
+
+Frontend stroke payload:
+
+```js
+{
+  type: "stroke",
+  roomId,
+  userId,
+  points: [[x, y], ...],
+  pressures: [0.4, 0.6, ...],
+  color,
+  width
+}
+```
+
+Backend integration note for Ronald:
+
+- The frontend now sends `pressures` alongside `points`.
+- Ronald should confirm the Python backend stores and broadcasts `pressures` on `stroke` and `canvas_state`.
+- If `pressures` are missing from a remote stroke, the frontend falls back to `0.5` pressure so replay still works.
+
+Verification completed:
+
+- `npm run lint`
+- `npm run build`
+- Browser smoke test: drawing still creates pixels on the canvas with no runtime errors.
 
 ## License
 

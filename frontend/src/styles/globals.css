@@ -23,6 +23,53 @@
   user-select: none;
 }
 
+.collaborator-strip {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 4;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.collaborator-strip span {
+  padding: 3px 6px;
+  color: var(--text-primary);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.remote-cursor {
+  position: absolute;
+  z-index: 5;
+  width: 10px;
+  height: 10px;
+  background: var(--cursor-color);
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.remote-cursor span {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 6px;
+  color: #ffffff;
+  background: var(--cursor-color);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 /* Fabric wraps our <canvas> in a .canvas-container — border that so the
    frame hugs the actual drawing area exactly. Direct child only, so a
    double-mount can never stack a second bordered box. */
