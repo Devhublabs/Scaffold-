@@ -1,8 +1,8 @@
 # Co-Artist — Mode 1 (Skeleton & Construction Guide) — Implementation Plan
 
-> **Status:** Not started. This document is the source of truth for building Mode 1.
-> If work is interrupted, resume from the **Progress Checklist** at the bottom.
-> **Branch:** create `feat/co-artist-skeleton` off `main`.
+> **Status:** ✅ Complete (2026-07-12). All three phases shipped on `feat/co-artist-skeleton`; 97 tests green (92 unit + 5 integration).
+> This document is the source of truth for building Mode 1.
+> **Branch:** `feat/co-artist-skeleton` (off `main`).
 > **Owner:** Co-Artist backend (+ frontend Co-Artist canvas, handled without Obi).
 
 ---
@@ -271,27 +271,30 @@ async def co_artist_shapes(sid, data):
 ## 10. Progress Checklist (update as you go — resume point if interrupted)
 
 ### Phase 1 — Rig + FK + construction shapes (no AI, no I/O)
-- [ ] Create branch `feat/co-artist-skeleton` off `main`
-- [ ] `app/services/skeleton/__init__.py`
-- [ ] `rig.py` — hierarchy, joint defs, rest angles, limits
-- [ ] `proportions_resolver.py` — proportions → lengths/widths
-- [ ] `fk.py` — 2D FK + clamping
-- [ ] `volumes.py` — construction shapes (upper-body first: head, ribcage/pelvis ellipses, arms, spine, cross-contours, joint spheres; then legs)
-- [ ] `skeleton_service.py` — `build_skeleton(...)` assembles `co_artist_shapes`
-- [ ] tests: `test_proportions_resolver.py`, `test_fk.py`, `test_volumes.py`, `test_skeleton_service.py`
-- [ ] All Phase 1 unit tests green (`pytest -m "not integration"`)
+- [x] Create branch `feat/co-artist-skeleton` off `main`
+- [x] `app/services/skeleton/__init__.py`
+- [x] `rig.py` — hierarchy, joint defs, rest angles, limits
+- [x] `proportions_resolver.py` — proportions → lengths/widths
+- [x] `fk.py` — 2D FK + clamping
+- [x] `volumes.py` — construction shapes (upper-body first: head, ribcage/pelvis ellipses, arms, spine, cross-contours, joint spheres; then legs)
+- [x] `skeleton_service.py` — `build_skeleton(...)` assembles `co_artist_shapes`
+- [x] tests: `test_proportions_resolver.py`, `test_fk.py`, `test_volumes.py`, `test_skeleton_service.py`
+- [x] All Phase 1 unit tests green (`pytest -m "not integration"`)
 
 ### Phase 2 — Contour silhouette (traceable edges)
-- [ ] `silhouette.py` — width profiles + offset/smooth (port `_buildOutlinePath`)
-- [ ] `build_skeleton` emits `role: "contour"` shapes
-- [ ] `test_silhouette.py` green
+- [x] `silhouette.py` — width profiles + offset/smooth (port `_buildOutlinePath`)
+- [x] `build_skeleton` emits `role: "contour"` shapes
+- [x] `test_silhouette.py` green
 
 ### Phase 3 — Wiring
-- [ ] `POST /api/co-artist/skeleton` route
-- [ ] `co_artist_shapes` socket broadcast event
-- [ ] `test_co_artist_skeleton_api.py` + one socket integration test green
-- [ ] Full suite green; commit
+- [x] `POST /api/co-artist/skeleton` route
+- [x] `co_artist_shapes` socket broadcast event
+- [x] `test_co_artist_skeleton_api.py` + one socket integration test green
+- [x] Full suite green; commit
 
 ### Notes / deviations (append discoveries here)
-- …
+- **2026-07-12:** Mode 1 complete on `feat/co-artist-skeleton`. Full suite green in-container:
+  `92 passed, 5 deselected` (unit) and `97 passed` (full). Committed as `bf50fb8`.
+- Known non-blocking warning: `StarletteDeprecationWarning` — `httpx` with `starlette.testclient`
+  is deprecated (affects `test_co_artist_skeleton_api.py`'s `TestClient`). No action needed yet.
 ```

@@ -1,0 +1,1 @@
+# Co-Artist skeleton package

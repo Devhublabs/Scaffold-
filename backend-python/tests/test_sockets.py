@@ -92,3 +92,49 @@ async def test_cursor_broadcasts_to_others_but_not_sender(wait_until):
     finally:
         await a.disconnect()
         await b.disconnect()
+
+
+@pytest.mark.integration
+async def test_co_artist_shapes_broadcasts_to_others_but_not_sender():
+    room = "it_co_artist_shapes_room"
+    a = socketio.AsyncClient()
+    b = socketio.AsyncClient()
+
+    b_received = []
+    a_received_own = []
+
+    @a.on("co_artist_shapes")
+    async def _on_a(data):
+        a_received_own.append(data)
+
+    @b.on("co_artist_shapes")
+    async def _on_b(data):
+        b_received.append(data)
+
+    try:
+        await a.connect(SERVER_URL)
+        await b.connect(SERVER_URL)
+        await a.emit("join_room_event", {"roomId": room, "userId": "user_A"})
+        await b.emit("join_room_event", {"roomId": room, "userId": "user_B"})
+        await asyncio.sleep(0.5)
+
+        test_payload = {
+            "characterId": "char_99",
+            "shapes": [{"id": "head-ball", "type": "ellipse", "cx": 0, "cy": 0}]
+        }
+
+        await a.emit("co_artist_shapes", {
+            "roomId": room,
+            "userId": "user_A",
+            "payload": test_payload
+        })
+        await asyncio.sleep(0.5)
+
+        assert len(b_received) == 1
+        assert b_received[0]["userId"] == "user_A"
+        assert b_received[0]["payload"] == test_payload
+        assert a_received_own == []
+    finally:
+        await a.disconnect()
+        await b.disconnect()
+
