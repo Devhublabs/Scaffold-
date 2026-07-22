@@ -19,3 +19,10 @@ export async function login(req, res, next) {
     next(error);
   }
 }
+
+export function me(req, res) {
+  res.status(200).json({
+    userId: req.auth.userId,
+    username: req.auth.username,
+  });
+}

@@ -1,28 +1,18 @@
-import express from "express";
 import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createApp } from "./app.js";
 import { connectDB } from "./config/db.js";
-import authRoutes from "./routes/authRoutes.js";
 
-dotenv.config();
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(currentDirectory, "../.env") });
 
-const app = express();
 const PORT = process.env.PORT || 4000;
-
-app.use(express.json());
-
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", service: "backend-node" });
-});
-
-app.use("/auth", authRoutes);
-
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(err.status || 500).json({ error: err.message || "Internal server error" });
-});
 
 async function startServer() {
   await connectDB();
+  const app = createApp();
+
   app.listen(PORT, () => {
     console.log(`backend-node listening on http://0.0.0.0:${PORT}`);
   });

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database.connection import get_database
 
 async def save_stroke(room_id: str, stroke_data: dict):
@@ -10,7 +10,7 @@ async def save_stroke(room_id: str, stroke_data: dict):
         "color": stroke_data.get("color", "#000000"),
         "width": stroke_data.get("width", 3),
         "pressures": stroke_data.get("pressures", []),
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.now(timezone.utc)
     }
     await db.strokes.insert_one(stroke)
     print(f"[DB] Stroke saved for room {room_id} by {stroke['userId']}")
