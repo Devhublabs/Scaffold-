@@ -3,7 +3,7 @@ import { PencilBrush } from "fabric";
 export class EraserBrush extends PencilBrush {
   constructor(canvas) {
     super(canvas);
-    this.width = 20;
+    this.width = 35;
     this.straightLineKey = null;
   }
 
