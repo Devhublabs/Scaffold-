@@ -45,77 +45,7 @@ tool builds the scaffold; the artist builds the art.
 
 ## Repository Structure
 
-```
-Scaffold/
-│
-├── frontend/
-│   ├── public/
-  ├── src/
-  │   ├── assets/
-  │   ├── canvas/
-  │   ├── components/
-  │   ├── pages/
-  │   ├── layouts/
-  │   ├── hooks/
-  │   ├── context/
-  │   ├── services/
-  │   ├── socket/
-  │   ├── utils/
-  │   ├── styles/
-  │   ├── constants/
-  │   └── icons/
-  ├── index.html
-  ├── package.json
-  ├── package-lock.json
-  ├── vite.config.js
-  ├── eslint.config.js
-  └── .gitignore
-│
-├── backend-python/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── sockets/
-│   │   ├── models/
-│   │   ├── services/
-│   │   ├── database/
-│   │   └── utils/
-  ├── tests/
-  └── requirements.txt
-│
-├── backend-node/
-│   ├── routes/
-│   ├── middleware/
-│   ├── controllers/
-│   ├── services/
-│   ├── utils/
-  ├── config/
-  ├── exports/
-  ├── package.json
-  └── .gitignore
-│
-├── docs/
-├── .github/
-│   └── workflows/
-│
-├── README.md
-├── .gitignore
-└── LICENSE
-```
-
-Run in the background:
-        │
-        ▼
-Fitter — computes best-fit geometry from stroke points
-        │
-        ▼
-ShapeFactory — creates a clean Fabric object from fitted parameters
-        │
-        ▼
-Original freehand path removed, clean shape added to canvas
-        │
-        ▼
-Clean shape recorded in layer state and emitted over Socket.IO
-```
+See [docs/project-structure.md](docs/project-structure.md) for the full directory tree and folder descriptions. The project structure document is the canonical reference for the repository layout.
 
 ---
 
@@ -198,65 +128,6 @@ cp .env.example .env
 - Each service's source folder is mounted into its container, so saving a file hot-reloads that service (Vite HMR for the frontend, `nodemon` for backend-node, `uvicorn --reload` for backend-python).
 - `backend-node` currently ships a **minimal Express server** exposing only `/health`. Build authentication, JWT, and the export service on top of `backend-node/server.js`.
 
-## Repository Structure
-
-```
-Scaffold/
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── canvas/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── layouts/
-│   │   ├── hooks/
-│   │   ├── context/
-│   │   ├── services/
-│   │   ├── socket/
-│   │   ├── utils/
-│   │   ├── styles/
-│   │   ├── constants/
-│   │   └── icons/
-│   ├── index.html
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── vite.config.js
-│   ├── eslint.config.js
-│   └── .gitignore
-│
-├── backend-python/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── sockets/
-│   │   ├── models/
-│   │   ├── services/
-│   │   ├── database/
-│   │   └── utils/
-│   ├── tests/
-│   └── requirements.txt
-│
-├── backend-node/
-│   ├── routes/
-│   ├── middleware/
-│   ├── controllers/
-│   ├── services/
-│   ├── utils/
-│   ├── config/
-│   ├── exports/
-│   ├── package.json
-│   └── .gitignore
-│
-├── docs/
-├── .github/
-│   └── workflows/
-│
-├── README.md
-├── .gitignore
-└── LICENSE
-```
-
 ## Team Responsibilities
 
 ### Obi — Canvas Engine and Real-Time Client
@@ -320,27 +191,18 @@ Integration tests connect to http://localhost:8000 and require MongoDB.
 
 ---
 
-## Repository Structure
+## Documentation Policy
 
-See `docs/project-structure.md` for the full directory tree.
-
-Top-level layout:
-
-```
-scaffold/
-├── frontend/          — React app (canvas, socket, pages, styles)
-├── backend-python/    — FastAPI real-time server and Co-Artist services
-├── backend-node/      — Express auth and export service
-├── docs/              — PRD, architecture, and planning documents
-├── .env.example       — environment variable template
-└── docker-compose.yml — full stack orchestration
-```
+- README.md documents the project.
+- docs/project-structure.md documents the filesystem.
+- Both must be updated whenever implementation changes.
+- Documentation changes should be included in the same commit or PR as the code whenever applicable.
 
 ---
 
 ## Known Limitations
 
-- Authentication, JWT validation, and export are not yet implemented
+- Authentication and JWT validation are present in the Node backend, but export flows and full integration remain incomplete.
 - The `authToken` sent by the development client is not validated
 - The Python Socket.IO server currently allows all CORS origins
 - The eraser draws with the canvas background color; it is not a destructive

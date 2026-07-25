@@ -1,15 +1,28 @@
 .
 ├── backend-node
+│   ├── app.js
 │   ├── config
+│   │   ├── cors.js
+│   │   └── db.js
 │   ├── controllers
+│   │   └── authController.js
 │   ├── Dockerfile
 │   ├── exports
 │   ├── middleware
+│   │   └── requireAuth.js
+│   ├── models
+│   │   └── User.js
 │   ├── package.json
+│   ├── package-lock.json
 │   ├── routes
+│   │   └── authRoutes.js
 │   ├── server.js
 │   ├── services
+│   │   └── authService.js
+│   ├── test
+│   │   └── auth.test.js
 │   └── utils
+│       └── jwt.js
 ├── backend-python
 │   ├── app
 │   │   ├── api
@@ -27,6 +40,7 @@
 │   │   │       └── __init__.cpython-312.pyc
 │   │   ├── models
 │   │   ├── services
+│   │   │   ├── auth_service.py
 │   │   │   ├── canvas_service.py
 │   │   │   ├── co_artist_service.py
 │   │   │   ├── __init__.py
@@ -64,6 +78,7 @@
 │       │   ├── test_canvas_service.cpython-312.pyc
 │       │   ├── test_room_service.cpython-312.pyc
 │       │   └── test_sockets.cpython-312.pyc
+│       ├── test_auth_service.py
 │       ├── test_canvas_persistence.py
 │       ├── test_canvas_service.py
 │       ├── test_co_artist_service.py
@@ -73,11 +88,13 @@
 │       ├── test_room_service.py
 │       ├── test_silhouette.py
 │       ├── test_skeleton_service.py
+│       ├── test_socket_auth.py
 │       ├── test_sockets.py
 │       └── test_volumes.py
 ├── docker-compose.yml
 ├── docs
 │   ├── co-artist-mode1-plan.md
+│   ├── project-structure.md
 │   └── Scaffold_PRD.pdf
 ├── frontend
 │   ├── dist
@@ -163,4 +180,4 @@
 ├── README.md
 └── structure.txt
 
-60 directories, 104 files
+62 directories, 119 files
