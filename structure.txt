@@ -1,0 +1,145 @@
+.
+├── backend-node
+│   ├── config
+│   ├── controllers
+│   ├── Dockerfile
+│   ├── exports
+│   ├── middleware
+│   ├── package.json
+│   ├── routes
+│   ├── server.js
+│   ├── services
+│   └── utils
+├── backend-python
+│   ├── app
+│   │   ├── api
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   └── voice.cpython-312.pyc
+│   │   │   └── voice.py
+│   │   ├── database
+│   │   │   ├── connection.py
+│   │   │   ├── __init__.py
+│   │   │   └── __pycache__
+│   │   │       ├── connection.cpython-312.pyc
+│   │   │       └── __init__.cpython-312.pyc
+│   │   ├── models
+│   │   ├── services
+│   │   │   ├── canvas_service.py
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── canvas_service.cpython-312.pyc
+│   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   ├── room_service.cpython-312.pyc
+│   │   │   │   └── voice_service.cpython-312.pyc
+│   │   │   ├── room_service.py
+│   │   │   └── voice_service.py
+│   │   ├── sockets
+│   │   │   ├── events.py
+│   │   │   ├── __init__.py
+│   │   │   └── __pycache__
+│   │   │       ├── events.cpython-312.pyc
+│   │   │       └── __init__.cpython-312.pyc
+│   │   └── utils
+│   ├── Dockerfile
+│   ├── main.py
+│   ├── pytest.ini
+│   ├── requirements-dev.txt
+│   ├── requirements.txt
+│   └── tests
+│       ├── __pycache__
+│       │   ├── test_canvas_persistence.cpython-312.pyc
+│       │   ├── test_canvas_service.cpython-312.pyc
+│       │   ├── test_room_service.cpython-312.pyc
+│       │   └── test_sockets.cpython-312.pyc
+│       ├── test_canvas_persistence.py
+│       ├── test_canvas_service.py
+│       ├── test_room_service.py
+│       └── test_sockets.py
+├── docker-compose.yml
+├── docs
+│   ├── co-artist-mode1-plan.md
+│   └── Scaffold_PRD.pdf
+├── frontend
+│   ├── dist
+│   │   ├── assets
+│   │   │   ├── index-CeGIOQk8.css
+│   │   │   └── index-DcCJRWM9.js
+│   │   └── index.html
+│   ├── Dockerfile
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   ├── src
+│   │   ├── App.jsx
+│   │   ├── assets
+│   │   ├── canvas
+│   │   │   ├── brushes
+│   │   │   │   ├── EraserBrush.js
+│   │   │   │   └── PressureBrush.js
+│   │   │   ├── components
+│   │   │   │   └── Canvas.jsx
+│   │   │   ├── history
+│   │   │   ├── shapes
+│   │   │   │   ├── detectors
+│   │   │   │   │   ├── arrowDetector.js
+│   │   │   │   │   ├── circleDetector.js
+│   │   │   │   │   ├── ellipseDetector.js
+│   │   │   │   │   ├── lineDetector.js
+│   │   │   │   │   ├── polygonDetector.js
+│   │   │   │   │   ├── rectangleDetector.js
+│   │   │   │   │   ├── speechBubbleDetector.js
+│   │   │   │   │   └── starDetector.js
+│   │   │   │   ├── fitters
+│   │   │   │   │   ├── fitArrow.js
+│   │   │   │   │   ├── fitCircle.js
+│   │   │   │   │   ├── fitEllipse.js
+│   │   │   │   │   ├── fitLine.js
+│   │   │   │   │   ├── fitPolygon.js
+│   │   │   │   │   ├── fitRectangle.js
+│   │   │   │   │   ├── fitSpeechBubble.js
+│   │   │   │   │   └── fitStar.js
+│   │   │   │   ├── ShapeFactory.js
+│   │   │   │   ├── snapToShape.js
+│   │   │   │   └── utils
+│   │   │   │       ├── angle.js
+│   │   │   │       ├── boundingBox.js
+│   │   │   │       ├── distance.js
+│   │   │   │       ├── geometry.js
+│   │   │   │       └── index.js
+│   │   │   ├── templates
+│   │   │   └── tools
+│   │   ├── components
+│   │   ├── constants
+│   │   ├── context
+│   │   │   ├── layers-context.js
+│   │   │   └── LayersContext.jsx
+│   │   ├── hooks
+│   │   ├── icons
+│   │   ├── layouts
+│   │   ├── main.jsx
+│   │   ├── pages
+│   │   │   ├── Auth
+│   │   │   ├── Dashboard
+│   │   │   ├── Export
+│   │   │   ├── Landing
+│   │   │   ├── Room
+│   │   │   └── Workspace
+│   │   ├── services
+│   │   ├── socket
+│   │   │   └── socket.js
+│   │   ├── styles
+│   │   │   ├── components
+│   │   │   ├── globals.css
+│   │   │   └── variables.css
+│   │   └── utils
+│   ├── structure.txt
+│   └── vite.config.js
+├── LICENSE
+├── README.md
+└── structure.txt
+
+58 directories, 85 files

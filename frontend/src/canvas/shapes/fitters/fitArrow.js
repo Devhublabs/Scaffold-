@@ -1,0 +1,14 @@
+/**
+ * Compute best-fit arrow geometry after arrow intent has been detected.
+ *
+ * @param {Array<{ x: number, y: number }>} points - Ordered stroke points.
+ * @param {object|null} detection - Metadata produced by the arrow detector.
+ * @returns {null}
+ */
+export function fitArrow(points, detection) {
+  void points;
+  void detection;
+
+  // TODO: Implement best-fit arrow geometry calculation.
+  return null;
+}
