@@ -1,0 +1,2656 @@
+ import { useEffect, useRef, useState } from "react";
+import {
+  Users,
+  Cloud,
+  Layers as LayersIcon,
+  Lock,
+  MousePointer2,
+  Pencil,
+  Eraser,
+  Type,
+  Square,
+  Ruler,
+  Image as ImageIcon,
+  Grid3x3,
+  Paintbrush,
+  MoreHorizontal,
+  Plus,
+  Share2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  Eye,
+  EyeOff,
+  Send,
+  Undo2,
+  Redo2,
+  Menu,
+  Mail,
+  Lock as LockIcon,
+  Home,
+  Folder,
+  LayoutTemplate,
+  DoorOpen,
+  Settings,
+  Upload,
+  Search,
+  Bell,
+  Clock,
+  Filter,
+  ArrowUpDown,
+  X,
+} from "lucide-react";
+
+/* ============================== LANDING ============================== */
+/* Collaborator cursor colors — single source of truth reused across
+   the mockup, avatars, and comments so they always match. */
+const COLLABORATORS = {
+  ren: { name: "Ren", color: "#3E6FF0" },
+  mika: { name: "Mika", color: "#2FD1A0" },
+  kai: { name: "Kai", color: "#8B5CF6" },
+};
+
+/* Reveal-on-scroll hook. Falls back to instantly-visible if the user
+   prefers reduced motion. */
+function useInView(threshold = 0.2) {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (prefersReduced) {
+      setInView(true);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          obs.disconnect();
+        }
+      },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+
+  return [ref, inView];
+}
+
+function FeatureIcon({ icon: Icon, title, subtitle }) {
+  return (
+    <div className="feature-icon-item">
+      <div className="feature-icon-circle">
+        <Icon size={18} strokeWidth={2} />
+      </div>
+      <div>
+        <div className="feature-icon-title">{title}</div>
+        <div className="feature-icon-subtitle">{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureCard({ icon: Icon, title, description, delay }) {
+  const [ref, inView] = useInView(0.15);
+  return (
+    <div
+      ref={ref}
+      className={`feature-card ${inView ? "in-view" : ""}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      <div className="feature-card-icon">
+        <Icon size={20} strokeWidth={2} />
+      </div>
+      <h3 className="feature-card-title">{title}</h3>
+      <p className="feature-card-desc">{description}</p>
+    </div>
+  );
+}
+
+/* Manga screentone panel — dot-halftone placeholder instead of real
+   character art, with a couple of speed-lines for energy. */
+function LandingTone({ className = "", dotSize = 3, dotGap = 9, speed = false }) {
+  return (
+    <div className={`tone-panel ${className}`}>
+      <div
+        className="tone-dots"
+        style={{
+          backgroundSize: `${dotGap}px ${dotGap}px`,
+          backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.5) ${dotSize}px, transparent ${dotSize}px)`,
+        }}
+      />
+      {speed && <div className="tone-speedlines" />}
+    </div>
+  );
+}
+
+function MockCursorTag({ name, color, top, left, delay }) {
+  return (
+    <div
+      className="mock-cursor"
+      style={{ top, left, animationDelay: delay }}
+    >
+      <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+        <path
+          d="M2 1.5L15.5 8.2L9.3 9.6L6.3 15.8L2 1.5Z"
+          fill={color}
+          stroke="rgba(0,0,0,0.35)"
+          strokeWidth="0.6"
+        />
+      </svg>
+      <span className="mock-cursor-label" style={{ background: color }}>
+        {name}
+      </span>
+    </div>
+  );
+}
+
+function ProductPreview() {
+  const [ref, inView] = useInView(0.1);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const handleMouseMove = (e) => {
+    if (prefersReduced) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ x: py * -3, y: px * 4 });
+  };
+
+  const handleMouseLeave = () => setTilt({ x: 0, y: 0 });
+
+  const layers = [
+    { name: "Panel 4" },
+    { name: "Panel 3" },
+    { name: "Panel 2" },
+    { name: "Panel 1" },
+    { name: "Sketch", group: true },
+    { name: "Background", group: true },
+  ];
+
+  const comments = [
+    {
+      who: COLLABORATORS.mika,
+      time: "2m ago",
+      text: "Let's add more impact lines here!",
+    },
+    {
+      who: COLLABORATORS.ren,
+      time: "5m ago",
+      text: "How about this expression?",
+    },
+    { who: COLLABORATORS.kai, time: "8m ago", text: "Background looks great!" },
+  ];
+
+  return (
+    <div
+      ref={ref}
+      className={`preview-wrap ${inView ? "in-view" : ""}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div
+        className="preview-frame"
+        style={{
+          transform: `perspective(1400px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+        }}
+      >
+        {/* Top bar */}
+        <div className="preview-topbar">
+          <div className="topbar-left">
+            <Menu size={16} />
+            <span className="topbar-doc">
+              Re:Bound &ndash; Chapter 13 <ChevronDown size={13} />
+            </span>
+            <span className="topbar-page">
+              page_18 <ChevronDown size={13} />
+            </span>
+          </div>
+          <div className="topbar-center">
+            <Cloud size={14} />
+            <span>100%</span>
+            <Minus size={13} />
+            <Plus size={13} />
+          </div>
+          <div className="topbar-right">
+            <div className="avatar-stack">
+              <span
+                className="avatar-dot"
+                style={{ background: COLLABORATORS.ren.color }}
+              >
+                R
+              </span>
+              <span
+                className="avatar-dot"
+                style={{ background: COLLABORATORS.mika.color }}
+              >
+                M
+              </span>
+              <span
+                className="avatar-dot"
+                style={{ background: COLLABORATORS.kai.color }}
+              >
+                K
+              </span>
+            </div>
+            <button className="share-btn">
+              Share <ChevronDown size={13} />
+            </button>
+            <Plus size={16} />
+          </div>
+        </div>
+
+        <div className="preview-body">
+          {/* Toolbar */}
+          <div className="preview-toolbar">
+            {[
+              { icon: MousePointer2, label: "Select", active: true },
+              { icon: Pencil, label: "Pen" },
+              { icon: Eraser, label: "Eraser" },
+              { icon: Type, label: "Text" },
+              { icon: Square, label: "Shapes" },
+              { icon: Ruler, label: "Ruler" },
+              { icon: ImageIcon, label: "Image" },
+              { icon: Grid3x3, label: "Panel" },
+              { icon: Paintbrush, label: "Brushes" },
+              { icon: MoreHorizontal, label: "More" },
+            ].map(({ icon: Icon, label, active }) => (
+              <button
+                key={label}
+                className={`tool-btn ${active ? "active" : ""}`}
+                title={label}
+                aria-label={label}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+            <div className="toolbar-spacer" />
+            <button className="tool-btn" title="Undo" aria-label="Undo">
+              <Undo2 size={14} />
+            </button>
+            <button className="tool-btn" title="Redo" aria-label="Redo">
+              <Redo2 size={14} />
+            </button>
+          </div>
+
+          {/* Canvas */}
+          <div className="preview-canvas">
+            <LandingTone className="panel-hero" dotGap={10} speed />
+            <div className="panel-row">
+              <LandingTone className="panel-small" dotGap={7} />
+              <LandingTone className="panel-small" dotGap={13} />
+            </div>
+            <MockCursorTag
+              name={COLLABORATORS.ren.name}
+              color={COLLABORATORS.ren.color}
+              top="14%"
+              left="20%"
+              delay="0s"
+            />
+            <MockCursorTag
+              name={COLLABORATORS.mika.name}
+              color={COLLABORATORS.mika.color}
+              top="34%"
+              left="66%"
+              delay="0.4s"
+            />
+            <MockCursorTag
+              name={COLLABORATORS.kai.name}
+              color={COLLABORATORS.kai.color}
+              top="66%"
+              left="16%"
+              delay="0.8s"
+            />
+          </div>
+
+          {/* Right panel: layers + comments */}
+          <div className="preview-side">
+            <div className="side-block">
+              <div className="side-header">
+                <span>Layers</span>
+                <Plus size={14} />
+              </div>
+              <div className="layer-list">
+                {layers.map((l) => (
+                  <div className="layer-row" key={l.name}>
+                    <span className={`layer-name ${l.group ? "group" : ""}`}>
+                      {l.name}
+                    </span>
+                    <Eye size={13} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="side-block comments-block">
+              <div className="side-header">
+                <span>Comments</span>
+              </div>
+              <div className="comment-list">
+                {comments.map((c, i) => (
+                  <div className="comment-row" key={i}>
+                    <span
+                      className="comment-avatar"
+                      style={{ background: c.who.color }}
+                    >
+                      {c.who.name[0]}
+                    </span>
+                    <div className="comment-body">
+                      <div className="comment-meta">
+                        <span className="comment-name">{c.who.name}</span>
+                        <span className="comment-time">{c.time}</span>
+                      </div>
+                      <div className="comment-text">{c.text}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="comment-input">
+                <span>Write a comment&hellip;</span>
+                <Send size={14} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LandingPage({ onNavigate }) {
+  const [scrolled, setScrolled] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll);
+    const t = setTimeout(() => setHeroReady(true), 40);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(t);
+    };
+  }, []);
+
+  return (
+    <div className="landing-root">
+      <style>{`
+        .landing-root {
+          --bg: #06070b;
+          --panel: #101218;
+          --panel-alt: #15171f;
+          --border: #21242e;
+          --text: #f2f3f6;
+          --text-muted: #8b8fa3;
+          --accent: #3E6FF0;
+          --accent-hover: #5580f5;
+          --accent-soft: rgba(62, 111, 240, 0.14);
+          --radius: 14px;
+
+          min-height: 100vh;
+          width: 100%;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
+          overflow-x: hidden;
+        }
+
+        .landing-root * { box-sizing: border-box; }
+
+        /* ---------- Header ---------- */
+        .header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 18px 40px;
+          transition: background 0.25s ease, border-color 0.25s ease, backdrop-filter 0.25s ease;
+          border-bottom: 1px solid transparent;
+        }
+        .header.scrolled {
+          background: rgba(6, 7, 11, 0.75);
+          backdrop-filter: blur(10px);
+          border-bottom-color: var(--border);
+        }
+
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-mark {
+          width: 34px; height: 34px;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--accent);
+        }
+        .brand-text-group { display: flex; flex-direction: column; line-height: 1.15; }
+        .brand-name {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 700;
+          font-size: 17px;
+          letter-spacing: -0.01em;
+        }
+        .brand-tagline { font-size: 11.5px; color: var(--text-muted); }
+
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .signin-link {
+          font-size: 14.5px;
+          color: var(--text);
+          background: none; border: none; cursor: pointer;
+          opacity: 0.85;
+          transition: opacity 0.15s ease;
+          margin-right: 10px;
+        }
+        .signin-link:hover { opacity: 1; }
+
+        .nav-pill {
+          display: flex; align-items: center;
+          font-size: 13.5px; font-weight: 600;
+          color: var(--text);
+          background: var(--panel);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 7px 14px;
+          cursor: pointer;
+          transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+        }
+        .nav-pill:hover { border-color: var(--accent); background: var(--accent-soft); color: #fff; }
+        .nav-pill:active { transform: scale(0.97); }
+
+        /* ---------- Buttons ---------- */
+        .btn {
+          font-family: 'Inter', sans-serif;
+          font-weight: 600;
+          font-size: 14.5px;
+          padding: 10px 20px;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.2s ease, border-color 0.15s ease;
+        }
+        .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary {
+          background: var(--accent);
+          border: 1px solid var(--accent);
+          color: #fff;
+        }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 0 4px var(--accent-soft); }
+        .btn-secondary {
+          background: transparent;
+          border: 1px solid var(--accent);
+          color: var(--text);
+        }
+        .btn-secondary:hover { background: var(--accent-soft); }
+        .btn-lg { padding: 14px 26px; font-size: 15px; border-radius: var(--radius); }
+
+        /* ---------- Hero ---------- */
+        .hero {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: 72px 24px 48px;
+          max-width: 780px;
+          margin: 0 auto;
+        }
+
+        .hero-el {
+          opacity: 0;
+          transform: translateY(14px);
+          transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+        .hero.ready .hero-el { opacity: 1; transform: translateY(0); }
+        .hero-el:nth-child(1) { transition-delay: 0.02s; }
+        .hero-el:nth-child(2) { transition-delay: 0.12s; }
+        .hero-el:nth-child(3) { transition-delay: 0.22s; }
+        .hero-el:nth-child(4) { transition-delay: 0.32s; }
+
+        .headline {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 700;
+          font-size: clamp(32px, 5.2vw, 52px);
+          line-height: 1.12;
+          letter-spacing: -0.02em;
+          margin: 0 0 20px;
+        }
+
+        .pitch {
+          color: var(--text-muted);
+          font-size: 16.5px;
+          line-height: 1.6;
+          margin: 0 0 34px;
+          max-width: 480px;
+        }
+
+        .cta-row { display: flex; gap: 14px; margin-bottom: 44px; }
+
+        .feature-icon-row {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 28px 36px;
+        }
+        .feature-icon-item {
+          display: flex; align-items: center; gap: 10px;
+          text-align: left;
+        }
+        .feature-icon-circle {
+          width: 34px; height: 34px; flex-shrink: 0;
+          border-radius: 9px;
+          background: var(--accent-soft);
+          color: var(--accent);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .feature-icon-title { font-size: 13.5px; font-weight: 600; }
+        .feature-icon-subtitle { font-size: 12px; color: var(--text-muted); }
+
+        /* ---------- Product preview ---------- */
+        .preview-wrap {
+          max-width: 1100px;
+          margin: 20px auto 60px;
+          padding: 0 20px;
+          opacity: 0;
+          transform: translateY(24px);
+          transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .preview-wrap.in-view { opacity: 1; transform: translateY(0); }
+
+        .preview-frame {
+          background: var(--panel);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 30px 80px -30px rgba(0,0,0,0.7);
+          transition: transform 0.12s ease-out;
+          will-change: transform;
+        }
+
+        .preview-topbar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 16px;
+          border-bottom: 1px solid var(--border);
+          font-size: 12.5px;
+          color: var(--text-muted);
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 14px; color: var(--text); }
+        .topbar-doc, .topbar-page {
+          display: flex; align-items: center; gap: 4px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12px;
+        }
+        .topbar-center { display: flex; align-items: center; gap: 6px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+        .avatar-stack { display: flex; }
+        .avatar-dot {
+          width: 24px; height: 24px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 10px; font-weight: 700; color: #fff;
+          border: 2px solid var(--panel);
+          margin-left: -7px;
+        }
+        .avatar-stack .avatar-dot:first-child { margin-left: 0; }
+
+        .share-btn {
+          display: flex; align-items: center; gap: 4px;
+          background: var(--accent); color: #fff; border: none;
+          padding: 6px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+          cursor: pointer;
+        }
+
+        .preview-body { display: flex; min-height: 400px; }
+
+        .preview-toolbar {
+          display: flex; flex-direction: column; align-items: center; gap: 4px;
+          padding: 12px 8px;
+          border-right: 1px solid var(--border);
+          background: var(--panel-alt);
+        }
+        .toolbar-spacer { flex: 1; min-height: 8px; }
+        .tool-btn {
+          width: 32px; height: 32px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; border: none; background: transparent;
+          color: var(--text-muted); cursor: pointer;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .tool-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+        .tool-btn.active { background: var(--accent-soft); color: var(--accent); }
+
+        .preview-canvas {
+          flex: 1;
+          position: relative;
+          padding: 18px;
+          background: repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0 2px, transparent 2px 40px);
+          display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .tone-panel {
+          position: relative;
+          background: #1b1d26;
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          overflow: hidden;
+        }
+        .tone-dots { position: absolute; inset: 0; opacity: 0.5; }
+        .tone-speedlines {
+          position: absolute; inset: 0;
+          background: repeating-linear-gradient(115deg, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 18px);
+          mix-blend-mode: screen;
+        }
+        .panel-hero { flex: 1.4; min-height: 130px; }
+        .panel-row { flex: 1; display: flex; gap: 10px; min-height: 100px; }
+        .panel-small { flex: 1; }
+
+        .mock-cursor {
+          position: absolute;
+          display: flex; align-items: center; gap: 5px;
+          animation: bob 3.2s ease-in-out infinite alternate;
+          pointer-events: none;
+        }
+        .mock-cursor-label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 9.5px; font-weight: 700; color: #fff;
+          padding: 2px 6px; border-radius: 5px; white-space: nowrap;
+        }
+        @keyframes bob {
+          0% { transform: translate(0,0); }
+          100% { transform: translate(6px, 5px); }
+        }
+
+        .preview-side {
+          width: 210px;
+          border-left: 1px solid var(--border);
+          background: var(--panel-alt);
+          display: flex; flex-direction: column;
+        }
+        .side-block { padding: 12px 14px; }
+        .side-header {
+          display: flex; align-items: center; justify-content: space-between;
+          font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+          margin-bottom: 8px;
+        }
+        .layer-list { display: flex; flex-direction: column; gap: 6px; }
+        .layer-row {
+          display: flex; align-items: center; justify-content: space-between;
+          font-size: 12px; color: var(--text);
+          padding: 4px 2px; border-radius: 5px;
+        }
+        .layer-row:hover { background: rgba(255,255,255,0.04); }
+        .layer-name.group { color: var(--text-muted); }
+
+        .comments-block { border-top: 1px solid var(--border); flex: 1; }
+        .comment-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+        .comment-row { display: flex; gap: 8px; }
+        .comment-avatar {
+          width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 9.5px; font-weight: 700; color: #fff;
+        }
+        .comment-meta { display: flex; gap: 6px; align-items: baseline; }
+        .comment-name { font-size: 11.5px; font-weight: 600; }
+        .comment-time { font-size: 10px; color: var(--text-muted); }
+        .comment-text { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+        .comment-input {
+          display: flex; align-items: center; justify-content: space-between;
+          font-size: 11.5px; color: var(--text-muted);
+          border: 1px solid var(--border); border-radius: 8px;
+          padding: 7px 10px;
+        }
+
+        /* ---------- Feature cards ---------- */
+        .cards-section {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 20px 90px;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+        }
+        .feature-card {
+          background: var(--panel);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 22px;
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+        .feature-card.in-view { opacity: 1; transform: translateY(0); }
+        .feature-card:hover { border-color: #34394a; background: #131620; }
+        .feature-card-icon {
+          width: 38px; height: 38px; border-radius: 10px;
+          background: var(--accent-soft); color: var(--accent);
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 14px;
+        }
+        .feature-card-title { font-size: 15px; font-weight: 700; margin: 0 0 6px; }
+        .feature-card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 900px) {
+          .cards-section { grid-template-columns: repeat(2, 1fr); }
+          .preview-side { display: none; }
+        }
+
+        @media (max-width: 640px) {
+          .header { padding: 14px 18px; }
+          .brand-tagline { display: none; }
+          .signin-link { display: none; }
+          .nav-pill { padding: 6px 10px; font-size: 12px; }
+          .btn-lg { padding: 12px 18px; font-size: 14px; }
+          .hero { padding: 44px 18px 32px; }
+          .cta-row { flex-direction: column; width: 100%; }
+          .cta-row .btn { width: 100%; }
+          .feature-icon-row { gap: 18px 22px; justify-content: flex-start; }
+          .cards-section { grid-template-columns: 1fr; }
+          .preview-toolbar { display: none; }
+          .preview-topbar { font-size: 11px; }
+          .topbar-doc span, .topbar-page span { display: none; }
+        }
+      `}</style>
+
+      <header className={`header ${scrolled ? "scrolled" : ""}`}>
+        <div className="brand">
+          <div className="brand-mark" aria-hidden="true">
+            <LayersIcon size={26} strokeWidth={2.2} />
+          </div>
+          <div className="brand-text-group">
+            <span className="brand-name">Scaffold</span>
+            <span className="brand-tagline">Manga, together.</span>
+          </div>
+        </div>
+        <div className="header-right">
+          <button className="signin-link" onClick={() => onNavigate("auth", "signin")}>Sign in</button>
+          <button className="nav-pill" onClick={() => onNavigate("dashboard")}>Dashboard</button>
+          <button className="nav-pill" onClick={() => onNavigate("projects")}>Projects</button>
+          <button className="btn btn-primary" onClick={() => onNavigate("auth", "signup")}>Create Room</button>
+        </div>
+      </header>
+
+      <div className={`hero ${heroReady ? "ready" : ""}`}>
+        <h1 className="headline hero-el">
+          The collaborative canvas
+          <br />
+          for manga creators
+        </h1>
+        <p className="pitch hero-el">
+          Create, collaborate, and bring stories to life together. Built for
+          manga artists, by manga artists.
+        </p>
+        <div className="cta-row hero-el">
+          <button className="btn btn-primary btn-lg" onClick={() => onNavigate("auth", "signup")}>Create Room</button>
+          <button className="btn btn-secondary btn-lg" onClick={() => onNavigate("auth", "signin")}>Join Room</button>
+        </div>
+        <div className="feature-icon-row hero-el">
+          <FeatureIcon
+            icon={Users}
+            title="Real-time collaboration"
+            subtitle="Work together seamlessly"
+          />
+          <FeatureIcon
+            icon={Cloud}
+            title="Cloud autosave"
+            subtitle="Never lose your work"
+          />
+          <FeatureIcon
+            icon={LayersIcon}
+            title="Manga templates"
+            subtitle="Start your story faster"
+          />
+          <FeatureIcon
+            icon={Lock}
+            title="Secure & private"
+            subtitle="Your stories, your way"
+          />
+        </div>
+      </div>
+
+      <ProductPreview />
+
+      <div className="cards-section">
+        <FeatureCard
+          icon={Users}
+          title="Real-time collaboration"
+          description="See your team's cursors, edits, and comments live on the page."
+          delay={0}
+        />
+        <FeatureCard
+          icon={Cloud}
+          title="Smart autosave & version history"
+          description="Every change is saved instantly and safely in the cloud."
+          delay={80}
+        />
+        <FeatureCard
+          icon={LayersIcon}
+          title="Manga templates & assets"
+          description="Use professional templates and speed up your workflow."
+          delay={160}
+        />
+        <FeatureCard
+          icon={Lock}
+          title="Private by default"
+          description="Your projects are secure, private, and under your control."
+          delay={240}
+        />
+      </div>
+    </div>
+  );
+}
+
+
+/* ============================== AUTH ============================== */
+/* Reuses the COLLABORATORS palette declared in the Landing section above. */
+
+function AuthTone({ style, dotGap = 9, speed = false }) {
+  return (
+    <div className="illus-panel" style={style}>
+      <div
+        className="illus-dots"
+        style={{
+          backgroundSize: `${dotGap}px ${dotGap}px`,
+          backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.55) ${Math.max(
+            2,
+            dotGap / 3
+          )}px, transparent ${Math.max(2, dotGap / 3)}px)`,
+        }}
+      />
+      {speed && <div className="illus-speedlines" />}
+    </div>
+  );
+}
+
+function IllusCursorTag({ name, color, top, left, delay }) {
+  return (
+    <div className="illus-cursor" style={{ top, left, animationDelay: delay }}>
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+        <path
+          d="M2 1.5L15.5 8.2L9.3 9.6L6.3 15.8L2 1.5Z"
+          fill={color}
+          stroke="rgba(0,0,0,0.35)"
+          strokeWidth="0.6"
+        />
+      </svg>
+      <span className="illus-cursor-label" style={{ background: color }}>
+        {name}
+      </span>
+    </div>
+  );
+}
+
+function AuthPage({ initialMode = "signin", onNavigate }) {
+  const [mode, setMode] = useState(initialMode); // 'signin' | 'signup'
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+
+  const isSignIn = mode === "signin";
+
+  return (
+    <div className="auth-root">
+      <style>{`
+        .auth-root {
+          --bg: #06070b;
+          --panel: #12141c;
+          --panel-alt: #15171f;
+          --input-bg: #1c1e28;
+          --border: #23262f;
+          --text: #f2f3f6;
+          --text-muted: #8b8fa3;
+          --accent: #3E6FF0;
+          --accent-hover: #5580f5;
+          --accent-soft: rgba(62, 111, 240, 0.14);
+          --radius: 16px;
+
+          min-height: 100vh;
+          width: 100%;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
+          display: flex;
+        }
+        .auth-root * { box-sizing: border-box; }
+
+        /* ---------- Illustration side ---------- */
+        .auth-illustration {
+          position: relative;
+          flex: 1.05;
+          overflow: hidden;
+          background: #0d0e13;
+        }
+
+        .illus-brand {
+          position: absolute;
+          top: 28px; left: 32px;
+          z-index: 3;
+          display: flex; align-items: center; gap: 10px;
+        }
+        .illus-brand-mark { color: var(--accent); display: flex; }
+        .illus-brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+        .illus-brand-name {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 700; font-size: 17px; letter-spacing: -0.01em;
+        }
+        .illus-brand-tagline { font-size: 11.5px; color: var(--text-muted); }
+
+        .illus-collage {
+          position: absolute; inset: 0;
+        }
+
+        .illus-panel {
+          position: absolute;
+          background: #1b1d26;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+        .illus-dots { position: absolute; inset: 0; opacity: 0.5; }
+        .illus-speedlines {
+          position: absolute; inset: 0;
+          background: repeating-linear-gradient(115deg, rgba(255,255,255,0.06) 0 1.5px, transparent 1.5px 20px);
+          mix-blend-mode: screen;
+        }
+
+        .illus-cursor {
+          position: absolute;
+          z-index: 3;
+          display: flex; align-items: center; gap: 6px;
+          animation: illusBob 3.4s ease-in-out infinite alternate;
+          pointer-events: none;
+          filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
+        }
+        .illus-cursor-label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px; font-weight: 700; color: #fff;
+          padding: 3px 9px; border-radius: 6px; white-space: nowrap;
+        }
+        @keyframes illusBob {
+          0% { transform: translate(0,0); }
+          100% { transform: translate(7px, 6px); }
+        }
+
+        .illus-vignette {
+          position: absolute; inset: 0;
+          background: linear-gradient(180deg, rgba(6,7,11,0.35) 0%, transparent 22%, transparent 78%, rgba(6,7,11,0.55) 100%);
+          pointer-events: none;
+        }
+
+        @media (max-width: 900px) {
+          .auth-illustration { display: none; }
+        }
+
+        /* ---------- Form side ---------- */
+        .auth-formside {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 32px;
+        }
+
+        .auth-card {
+          width: 100%;
+          max-width: 430px;
+          background: var(--panel);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 44px 40px;
+        }
+
+        .card-brand {
+          display: none;
+          align-items: center; gap: 10px;
+          margin-bottom: 28px;
+        }
+        .card-brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; }
+        @media (max-width: 900px) {
+          .card-brand { display: flex; }
+        }
+
+        .tabs {
+          display: flex;
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 4px;
+          margin-bottom: 28px;
+        }
+        .tab-btn {
+          flex: 1;
+          padding: 8px 0;
+          border: none;
+          background: transparent;
+          color: var(--text-muted);
+          font-size: 13.5px;
+          font-weight: 600;
+          border-radius: 7px;
+          cursor: pointer;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .tab-btn.active {
+          background: var(--accent);
+          color: #fff;
+        }
+
+        .auth-fade {
+          animation: authFade 0.32s ease;
+        }
+        @keyframes authFade {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 700;
+          font-size: 27px;
+          letter-spacing: -0.01em;
+          margin: 0 0 8px;
+        }
+        .auth-subtitle {
+          font-size: 14px;
+          color: var(--text-muted);
+          margin: 0 0 30px;
+          line-height: 1.5;
+        }
+
+        .field { margin-bottom: 20px; }
+        .field-label-row {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        .field-label { font-size: 13px; font-weight: 500; color: var(--text); }
+        .forgot-link {
+          font-size: 12.5px; color: var(--accent); background: none; border: none;
+          cursor: pointer; padding: 0;
+        }
+        .forgot-link:hover { color: var(--accent-hover); text-decoration: underline; }
+
+        .input-wrap {
+          position: relative;
+          display: flex; align-items: center;
+        }
+        .input-icon {
+          position: absolute; left: 13px;
+          color: var(--text-muted);
+          pointer-events: none;
+          display: flex;
+        }
+        .input-eye {
+          position: absolute; right: 13px;
+          color: var(--text-muted);
+          background: none; border: none; cursor: pointer;
+          display: flex; padding: 2px;
+        }
+        .input-eye:hover { color: var(--text); }
+
+        .text-input {
+          width: 100%;
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 11px 14px 11px 40px;
+          font-size: 14px;
+          color: var(--text);
+          font-family: 'Inter', sans-serif;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .text-input::placeholder { color: #5c6070; }
+        .text-input:focus {
+          outline: none;
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .submit-btn {
+          width: 100%;
+          margin-top: 4px;
+          padding: 13px 0;
+          background: var(--accent);
+          border: 1px solid var(--accent);
+          color: #fff;
+          font-size: 14.5px;
+          font-weight: 700;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: background 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease;
+        }
+        .submit-btn:hover { background: var(--accent-hover); box-shadow: 0 0 0 4px var(--accent-soft); }
+        .submit-btn:active { transform: scale(0.98); }
+        .submit-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+        .switch-line {
+          text-align: center;
+          font-size: 13.5px;
+          color: var(--text-muted);
+          margin: 22px 0 0;
+        }
+        .switch-btn {
+          background: none; border: none; cursor: pointer;
+          color: var(--accent); font-size: 13.5px; font-weight: 600; padding: 0;
+        }
+        .switch-btn:hover { color: var(--accent-hover); text-decoration: underline; }
+
+        .terms-line {
+          text-align: center;
+          font-size: 12px;
+          color: var(--text-muted);
+          line-height: 1.6;
+          margin-top: 34px;
+        }
+        .terms-line a {
+          color: var(--accent);
+          text-decoration: none;
+        }
+        .terms-line a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+          .auth-card { padding: 32px 22px; border-radius: 16px; }
+          .auth-title { font-size: 23px; }
+        }
+      `}</style>
+
+      <div className="auth-illustration">
+        <div className="illus-brand" onClick={() => onNavigate("landing")} style={{ cursor: "pointer" }}>
+          <div className="illus-brand-mark">
+            <LayersIcon size={24} strokeWidth={2.2} />
+          </div>
+          <div className="illus-brand-text">
+            <span className="illus-brand-name">Scaffold</span>
+            <span className="illus-brand-tagline">Manga, together.</span>
+          </div>
+        </div>
+
+        <div className="illus-collage">
+          <AuthTone
+            dotGap={11}
+            speed
+            style={{
+              top: "-4%",
+              left: "-4%",
+              width: "72%",
+              height: "42%",
+              clipPath: "polygon(0 0, 100% 0, 88% 100%, 0% 88%)",
+            }}
+          />
+          <AuthTone
+            dotGap={8}
+            style={{
+              top: "30%",
+              left: "8%",
+              width: "88%",
+              height: "48%",
+              clipPath: "polygon(6% 0, 100% 10%, 94% 100%, 0% 92%)",
+            }}
+          />
+          <AuthTone
+            dotGap={14}
+            style={{
+              top: "66%",
+              left: "-6%",
+              width: "70%",
+              height: "40%",
+              clipPath: "polygon(0 8%, 100% 0, 100% 100%, 8% 100%)",
+            }}
+          />
+        </div>
+
+        <IllusCursorTag
+          name={COLLABORATORS.ren.name}
+          color={COLLABORATORS.ren.color}
+          top="20%"
+          left="9%"
+          delay="0s"
+        />
+        <IllusCursorTag
+          name={COLLABORATORS.mika.name}
+          color={COLLABORATORS.mika.color}
+          top="48%"
+          left="70%"
+          delay="0.5s"
+        />
+        <IllusCursorTag
+          name={COLLABORATORS.kai.name}
+          color={COLLABORATORS.kai.color}
+          top="76%"
+          left="12%"
+          delay="1s"
+        />
+
+        <div className="illus-vignette" />
+      </div>
+
+      <div className="auth-formside">
+        <div className="auth-card">
+          <div className="card-brand" onClick={() => onNavigate("landing")} style={{ cursor: "pointer" }}>
+            <LayersIcon size={20} color="#3E6FF0" strokeWidth={2.2} />
+            <span className="card-brand-name">Scaffold</span>
+          </div>
+
+          <div className="tabs">
+            <button
+              className={`tab-btn ${isSignIn ? "active" : ""}`}
+              onClick={() => setMode("signin")}
+            >
+              Sign In
+            </button>
+            <button
+              className={`tab-btn ${!isSignIn ? "active" : ""}`}
+              onClick={() => setMode("signup")}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <div key={mode} className="auth-fade">
+            <h1 className="auth-title">
+              {isSignIn ? "Welcome back" : "Create your account"}
+            </h1>
+            <p className="auth-subtitle">
+              {isSignIn
+                ? "Sign in to your account and continue creating."
+                : "Set up your account and start your first room."}
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onNavigate("dashboard");
+              }}
+            >
+              <div className="field">
+                <div className="field-label-row">
+                  <label className="field-label" htmlFor="email">
+                    Email address
+                  </label>
+                </div>
+                <div className="input-wrap">
+                  <span className="input-icon">
+                    <Mail size={16} />
+                  </span>
+                  <input
+                    id="email"
+                    type="email"
+                    className="text-input"
+                    placeholder="Enter your email"
+                  />
+                </div>
+              </div>
+
+              <div className="field">
+                <div className="field-label-row">
+                  <label className="field-label" htmlFor="password">
+                    Password
+                  </label>
+                  {isSignIn && (
+                    <button type="button" className="forgot-link">
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <div className="input-wrap">
+                  <span className="input-icon">
+                    <Lock size={16} />
+                  </span>
+                  <input
+                    id="password"
+                    type={showPw ? "text" : "password"}
+                    className="text-input"
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    className="input-eye"
+                    onClick={() => setShowPw((v) => !v)}
+                    aria-label={showPw ? "Hide password" : "Show password"}
+                  >
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {!isSignIn && (
+                <div className="field">
+                  <div className="field-label-row">
+                    <label className="field-label" htmlFor="confirm-password">
+                      Confirm password
+                    </label>
+                  </div>
+                  <div className="input-wrap">
+                    <span className="input-icon">
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      id="confirm-password"
+                      type={showConfirmPw ? "text" : "password"}
+                      className="text-input"
+                      placeholder="Re-enter your password"
+                    />
+                    <button
+                      type="button"
+                      className="input-eye"
+                      onClick={() => setShowConfirmPw((v) => !v)}
+                      aria-label={
+                        showConfirmPw ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showConfirmPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button type="submit" className="submit-btn">
+                {isSignIn ? "Sign in" : "Create account"}
+              </button>
+            </form>
+
+            <p className="switch-line">
+              {isSignIn ? "Don't have an account? " : "Already have an account? "}
+              <button
+                className="switch-btn"
+                onClick={() => setMode(isSignIn ? "signup" : "signin")}
+              >
+                {isSignIn ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+          </div>
+
+          <p className="terms-line">
+            By continuing, you agree to our <a href="#">Terms of Service</a>
+            <br />
+            and acknowledge our <a href="#">Privacy Policy</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* ============================== DASHBOARD ============================== */
+/* ---------- shared palette ---------- */
+const PEOPLE = {
+  ren: { initial: "R", color: "#3E6FF0" },
+  mika: { initial: "M", color: "#2FD1A0" },
+  kai: { initial: "K", color: "#8B5CF6" },
+  yuna: { initial: "Y", color: "#F472B6" },
+  obi: { initial: "O", color: "#FBBF24" },
+  you: { initial: "Y", color: "#8b8fa3" },
+};
+
+const STATUS_STYLE = {
+  "IN PROGRESS": { bg: "rgba(62,111,240,0.16)", color: "#7C9CFF" },
+  PLANNING: { bg: "rgba(47,209,160,0.16)", color: "#2FD1A0" },
+  REVIEW: { bg: "rgba(251,146,60,0.16)", color: "#FB923C" },
+  DRAFT: { bg: "rgba(139,143,163,0.16)", color: "#B0B4C4" },
+  EDITING: { bg: "rgba(139,92,246,0.16)", color: "#A78BFA" },
+  "ON HOLD": { bg: "rgba(148,163,184,0.16)", color: "#94A3B8" },
+};
+
+const NAV_ITEMS = [
+  { label: "Dashboard", icon: Home },
+  { label: "Projects", icon: Folder },
+  { label: "Templates", icon: LayoutTemplate },
+  { label: "Rooms", icon: DoorOpen },
+  { label: "Members", icon: Users },
+  { label: "Settings", icon: Settings },
+  { label: "Exports", icon: Upload },
+];
+
+const DASHBOARD_PROJECTS = [
+  { title: "Re:Bound \u2013 Chapter 13", status: "IN PROGRESS", updated: "2h ago", people: [PEOPLE.ren, PEOPLE.mika, PEOPLE.kai], extra: 2, dotGap: 9, speed: true },
+  { title: "City Backgrounds", status: "PLANNING", updated: "1d ago", people: [PEOPLE.ren, PEOPLE.mika], extra: 0, dotGap: 13 },
+  { title: "Action Scenes Pack", status: "REVIEW", updated: "5d ago", people: [PEOPLE.kai, PEOPLE.yuna, PEOPLE.mika], extra: 1, dotGap: 8, speed: true },
+  { title: "Character Expressions", status: "DRAFT", updated: "1d ago", people: [PEOPLE.ren, PEOPLE.obi], extra: 0, dotGap: 15 },
+  { title: "Slice of Life \u2013 Vol. 1", status: "EDITING", updated: "3d ago", people: [PEOPLE.mika, PEOPLE.yuna, PEOPLE.kai], extra: 1, dotGap: 10 },
+  { title: "Fantasy World Pack", status: "DRAFT", updated: "5d ago", people: [PEOPLE.ren, PEOPLE.mika, PEOPLE.kai], extra: 0, dotGap: 12 },
+  { title: "Shonen Action Pack", status: "IN PROGRESS", updated: "6h ago", people: [PEOPLE.obi, PEOPLE.yuna], extra: 3, dotGap: 9, speed: true },
+  { title: "Environmental Studies", status: "PLANNING", updated: "1w ago", people: [PEOPLE.kai, PEOPLE.ren, PEOPLE.mika], extra: 0, dotGap: 16 },
+];
+
+const TEMPLATES = [
+  { name: "Classic 6 Panel", tag: "Standard", layout: "grid" },
+  { name: "Action Vertical", tag: "Dynamic", layout: "diagonal" },
+  { name: "Cinematic Flow", tag: "Cinematic", layout: "rows" },
+  { name: "Dialogue Heavy", tag: "Story", layout: "mixed" },
+  { name: "Full Bleed Moments", tag: "Impact", layout: "burst" },
+];
+
+const ROOMS = [
+  { name: "Re:Bound Team", members: 6 },
+  { name: "World Building", members: 4 },
+  { name: "Action Pack", members: 5 },
+  { name: "Slice of Life Studio", members: 3 },
+];
+
+const ACTIVITY = [
+  { who: PEOPLE.ren, name: "Ren", action: "updated 12 pages in", target: "Re:Bound \u2013 Chapter 13", time: "2h ago", unread: true },
+  { who: PEOPLE.mika, name: "Mika", action: "commented on", target: "Action Scenes Pack", time: "5h ago", unread: true },
+  { who: PEOPLE.you, name: "You", action: "uploaded 8 files to", target: "City Backgrounds", time: "1d ago", unread: true },
+  { who: PEOPLE.kai, name: "Kai", action: "joined the room", target: "Fantasy World Pack", time: "2d ago", unread: true },
+  { who: PEOPLE.yuna, name: "Yuna", action: "exported 3 pages from", target: "Character Expressions", time: "2d ago", unread: true },
+  { who: PEOPLE.ren, name: "Ren", action: "commented on", target: "Slice of Life \u2013 Vol. 1", time: "3d ago", unread: false },
+  { who: PEOPLE.you, name: "You", action: "updated the status of", target: "Shonen Action Pack", time: "4d ago", unread: false },
+  { who: PEOPLE.mika, name: "Mika", action: "invited Yuna to", target: "Slice of Life Studio", time: "5d ago", unread: true },
+];
+
+/* Screentone placeholder art, reused from Landing/Auth so every
+   thumbnail across the app shares one visual language. */
+function ScreenTone({ dotGap = 9, speed = false, className = "" }) {
+  const d = Math.max(2, dotGap / 3);
+  return (
+    <div className={`tone ${className}`}>
+      <div
+        className="tone-dots"
+        style={{
+          backgroundSize: `${dotGap}px ${dotGap}px`,
+          backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.5) ${d}px, transparent ${d}px)`,
+        }}
+      />
+      {speed && <div className="tone-speed" />}
+    </div>
+  );
+}
+
+function AvatarStack({ people, extra }) {
+  return (
+    <div className="avatar-stack">
+      {people.map((p, i) => (
+        <span
+          key={i}
+          className="avatar-chip"
+          style={{ background: p.color }}
+        >
+          {p.initial}
+        </span>
+      ))}
+      {extra > 0 && <span className="avatar-chip avatar-extra">+{extra}</span>}
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const s = STATUS_STYLE[status] || STATUS_STYLE.DRAFT;
+  return (
+    <span className="status-badge" style={{ background: s.bg, color: s.color }}>
+      {status}
+    </span>
+  );
+}
+
+function TemplateThumb({ layout }) {
+  return (
+    <div className={`template-thumb template-${layout}`}>
+      {layout === "grid" && (
+        <div className="tmpl-grid">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="tmpl-cell" />
+          ))}
+        </div>
+      )}
+      {layout === "diagonal" && (
+        <div className="tmpl-diagonal">
+          <div className="tmpl-diagonal-line" />
+        </div>
+      )}
+      {layout === "rows" && (
+        <div className="tmpl-rows">
+          <div className="tmpl-row-cell" />
+          <div className="tmpl-row-cell" />
+          <div className="tmpl-row-cell short" />
+        </div>
+      )}
+      {layout === "mixed" && (
+        <div className="tmpl-mixed">
+          <div className="tmpl-mixed-top">
+            <div className="tmpl-cell" />
+            <div className="tmpl-cell" />
+          </div>
+          <div className="tmpl-cell wide" />
+        </div>
+      )}
+      {layout === "burst" && (
+        <div className="tmpl-burst">
+          <div className="tmpl-burst-rays" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DashboardPage({ onNavigate }) {
+  const [navOpen, setNavOpen] = useState(false);
+  const [progress] = useState(65);
+
+  return (
+    <div className="dash-root">
+      <style>{`
+        .dash-root {
+          --bg: #06070b;
+          --panel: #101218;
+          --panel-alt: #0c0d13;
+          --sidebar-bg: #0a0b10;
+          --border: #21242e;
+          --text: #f2f3f6;
+          --text-muted: #8b8fa3;
+          --accent: #3E6FF0;
+          --accent-hover: #5580f5;
+          --accent-soft: rgba(62, 111, 240, 0.14);
+          --radius: 14px;
+
+          min-height: 100vh;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
+          display: flex;
+        }
+        .dash-root * { box-sizing: border-box; }
+
+        /* ---------- Sidebar ---------- */
+        .sidebar {
+          width: 232px;
+          flex-shrink: 0;
+          background: var(--sidebar-bg);
+          border-right: 1px solid var(--border);
+          display: flex;
+          flex-direction: column;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          padding: 22px 14px;
+          transition: transform 0.25s ease;
+          z-index: 30;
+        }
+
+        .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 22px; }
+        .sidebar-brand-mark { color: var(--accent); display: flex; }
+        .sidebar-brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+        .sidebar-brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; }
+        .sidebar-brand-tagline { font-size: 11px; color: var(--text-muted); }
+
+        .nav-list { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+        .nav-item {
+          display: flex; align-items: center; gap: 11px;
+          padding: 9px 12px;
+          border-radius: 9px;
+          font-size: 13.5px; font-weight: 500;
+          color: var(--text-muted);
+          background: transparent; border: none; cursor: pointer;
+          text-align: left; width: 100%;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+        .nav-item.active { background: var(--accent); color: #fff; }
+
+        .sidebar-user {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px; border-radius: 10px;
+          border-top: 1px solid var(--border);
+          margin-top: 8px; padding-top: 16px;
+          cursor: pointer;
+        }
+        .user-avatar {
+          width: 32px; height: 32px; border-radius: 50%;
+          background: ${PEOPLE.obi.color};
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12.5px; font-weight: 700; color: #14161c;
+          flex-shrink: 0;
+        }
+        .user-meta { display: flex; flex-direction: column; line-height: 1.25; flex: 1; min-width: 0; }
+        .user-name { font-size: 13px; font-weight: 600; }
+        .user-email { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .sidebar-backdrop { display: none; }
+
+        @media (max-width: 1024px) {
+          .sidebar { position: fixed; left: 0; transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.4); }
+          .sidebar.open { transform: translateX(0); }
+          .sidebar-backdrop.open {
+            display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 25;
+          }
+        }
+
+        /* ---------- Main ---------- */
+        .main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+        .topbar {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 16px;
+          padding: 18px 32px;
+          border-bottom: 1px solid var(--border);
+          position: sticky; top: 0; background: rgba(6,7,11,0.85); backdrop-filter: blur(8px);
+          z-index: 10;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+        .menu-btn {
+          display: none;
+          background: none; border: none; color: var(--text); cursor: pointer;
+          padding: 4px;
+        }
+        .search-box {
+          display: flex; align-items: center; gap: 8px;
+          background: var(--panel); border: 1px solid var(--border);
+          border-radius: 10px; padding: 8px 12px;
+          max-width: 360px; width: 100%;
+          color: var(--text-muted); font-size: 13.5px;
+        }
+        .search-box input {
+          background: none; border: none; outline: none; color: var(--text);
+          font-size: 13.5px; width: 100%; font-family: 'Inter', sans-serif;
+        }
+        .search-box input::placeholder { color: var(--text-muted); }
+        .kbd {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px; color: var(--text-muted);
+          border: 1px solid var(--border); border-radius: 5px;
+          padding: 1px 6px;
+        }
+
+        .topbar-right { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
+        .bell-wrap { position: relative; color: var(--text-muted); cursor: pointer; display: flex; }
+        .bell-wrap:hover { color: var(--text); }
+        .bell-badge {
+          position: absolute; top: -5px; right: -6px;
+          background: var(--accent); color: #fff;
+          font-size: 9.5px; font-weight: 700;
+          width: 15px; height: 15px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .profile-chip { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .profile-avatar {
+          width: 30px; height: 30px; border-radius: 50%;
+          background: ${PEOPLE.obi.color};
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 700; color: #14161c;
+        }
+        .profile-name { font-size: 13.5px; font-weight: 600; }
+
+        .content-wrap { display: flex; gap: 24px; padding: 28px 32px 60px; align-items: flex-start; }
+        .main-col { flex: 1; min-width: 0; }
+        .side-col { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
+
+        .fade-in {
+          opacity: 0; transform: translateY(10px);
+          animation: fadeUp 0.5s ease forwards;
+        }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        .greeting-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 26px; font-weight: 700; letter-spacing: -0.01em;
+          margin: 0 0 4px;
+        }
+        .greeting-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 22px; }
+
+        .action-row { display: flex; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
+        .action-btn {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 13.5px; font-weight: 600;
+          padding: 10px 18px; border-radius: 10px;
+          cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+        }
+        .action-btn:active { transform: scale(0.97); }
+        .action-primary { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
+        .action-primary:hover { background: var(--accent-hover); }
+        .action-secondary { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+        .action-secondary:hover { border-color: #34394a; background: #14161e; }
+
+        .section-header {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 14px;
+        }
+        .section-title { font-size: 15.5px; font-weight: 700; }
+        .view-all { font-size: 12.5px; color: var(--accent); background: none; border: none; cursor: pointer; }
+        .view-all:hover { color: var(--accent-hover); text-decoration: underline; }
+
+        /* Continue working card */
+        .continue-card {
+          display: flex; gap: 20px;
+          background: var(--panel); border: 1px solid var(--border);
+          border-radius: var(--radius); padding: 16px;
+          margin-bottom: 34px;
+        }
+        .continue-thumb {
+          width: 240px; height: 168px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
+        }
+        .continue-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 4px 4px 0; }
+        .continue-top { display: flex; align-items: flex-start; justify-content: space-between; }
+        .continue-title { font-size: 18px; font-weight: 700; margin: 10px 0 12px; }
+        .progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .progress-track { flex: 1; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 1s ease 0.2s; }
+        .progress-label { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+        .continue-meta-row { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+        .meta-left { display: flex; align-items: center; gap: 14px; }
+        .updated-note { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); }
+        .icon-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+        .icon-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+        .open-project-btn {
+          background: var(--accent); border: 1px solid var(--accent); color: #fff;
+          font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+        }
+        .open-project-btn:hover { background: var(--accent-hover); }
+
+        /* Projects grid */
+        .projects-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+          margin-bottom: 36px;
+        }
+        .project-card {
+          background: var(--panel); border: 1px solid var(--border);
+          border-radius: var(--radius); overflow: hidden;
+          transition: border-color 0.2s ease, transform 0.2s ease;
+          display: flex; flex-direction: column;
+        }
+        .project-card:hover { border-color: #34394a; transform: translateY(-2px); }
+        .project-thumb-wrap { position: relative; height: 128px; }
+        .status-badge {
+          position: absolute; top: 10px; left: 10px;
+          font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em;
+          padding: 4px 8px; border-radius: 6px;
+          font-family: 'JetBrains Mono', monospace;
+        }
+        .project-info { padding: 12px 14px 14px; }
+        .project-title { font-size: 13.5px; font-weight: 600; margin: 0 0 10px; }
+        .project-footer { display: flex; align-items: center; justify-content: space-between; }
+        .project-updated { font-size: 11px; color: var(--text-muted); }
+
+        .avatar-stack { display: flex; align-items: center; }
+        .avatar-chip {
+          width: 20px; height: 20px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 9px; font-weight: 700; color: #10121a;
+          border: 2px solid var(--panel);
+          margin-left: -6px;
+        }
+        .avatar-chip:first-child { margin-left: 0; }
+        .avatar-extra { background: #2b2e3a !important; color: var(--text-muted) !important; font-size: 8.5px; }
+
+        /* screentone thumbnails */
+        .tone { position: relative; width: 100%; height: 100%; background: #1b1d26; overflow: hidden; }
+        .tone-dots { position: absolute; inset: 0; opacity: 0.5; }
+        .tone-speed {
+          position: absolute; inset: 0;
+          background: repeating-linear-gradient(115deg, rgba(255,255,255,0.06) 0 1.5px, transparent 1.5px 20px);
+          mix-blend-mode: screen;
+        }
+
+        /* Templates */
+        .templates-row {
+          display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+          margin-bottom: 8px;
+        }
+        .template-card { display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+        .template-thumb {
+          height: 130px; border-radius: 10px; background: #eceef2;
+          border: 1px solid var(--border);
+          padding: 10px; display: flex; overflow: hidden;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .template-card:hover .template-thumb { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.35); }
+        .template-name { font-size: 12.5px; font-weight: 600; }
+        .template-tag { font-size: 11px; color: var(--text-muted); }
+
+        .tmpl-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; width: 100%; }
+        .tmpl-cell { background: #cfd3dc; border-radius: 3px; }
+        .tmpl-diagonal { position: relative; width: 100%; background: #cfd3dc; border-radius: 3px; }
+        .tmpl-diagonal-line { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 48%, #9aa0b0 48%, #9aa0b0 52%, transparent 52%); }
+        .tmpl-rows { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+        .tmpl-row-cell { flex: 1; background: #cfd3dc; border-radius: 3px; }
+        .tmpl-row-cell.short { flex: 0.6; }
+        .tmpl-mixed { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+        .tmpl-mixed-top { display: flex; gap: 5px; flex: 1; }
+        .tmpl-mixed-top .tmpl-cell { flex: 1; }
+        .tmpl-mixed .tmpl-cell.wide { flex: 1.2; }
+        .tmpl-burst { position: relative; width: 100%; background: #cfd3dc; border-radius: 3px; overflow: hidden; }
+        .tmpl-burst-rays {
+          position: absolute; inset: -20%;
+          background: repeating-conic-gradient(from 0deg, #b7bccb 0deg 4deg, #dde0e6 4deg 12deg);
+          opacity: 0.7;
+        }
+
+        /* Right sidebar panels */
+        .panel-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+        .room-row, .activity-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 8px 0;
+        }
+        .room-avatar, .activity-avatar {
+          width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 700; color: #10121a;
+        }
+        .room-meta { flex: 1; min-width: 0; }
+        .room-name { font-size: 13px; font-weight: 600; }
+        .room-members { font-size: 11.5px; color: var(--text-muted); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #2FD1A0; flex-shrink: 0; }
+
+        .activity-text { font-size: 12.5px; line-height: 1.4; }
+        .activity-text b { font-weight: 600; }
+        .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .activity-row { align-items: flex-start; position: relative; }
+        .unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); position: absolute; right: 0; top: 12px; }
+
+        @media (max-width: 1180px) {
+          .side-col { width: 240px; }
+          .projects-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 1024px) {
+          .menu-btn { display: flex; }
+          .content-wrap { flex-direction: column; }
+          .side-col { width: 100%; flex-direction: row; overflow-x: auto; }
+          .side-col .panel-card { min-width: 300px; }
+        }
+
+        @media (max-width: 780px) {
+          .projects-grid { grid-template-columns: repeat(2, 1fr); }
+          .templates-row { grid-template-columns: repeat(3, 1fr); }
+          .search-box { max-width: 200px; }
+          .continue-card { flex-direction: column; }
+          .continue-thumb { width: 100%; height: 150px; }
+          .side-col { flex-direction: column; }
+        }
+
+        @media (max-width: 520px) {
+          .topbar { padding: 14px 16px; }
+          .content-wrap { padding: 20px 16px 40px; }
+          .projects-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+          .templates-row { grid-template-columns: repeat(2, 1fr); }
+          .action-row .action-btn span { display: inline; }
+          .kbd { display: none; }
+          .profile-name { display: none; }
+        }
+      `}</style>
+
+      <div
+        className={`sidebar-backdrop ${navOpen ? "open" : ""}`}
+        onClick={() => setNavOpen(false)}
+      />
+
+      <aside className={`sidebar ${navOpen ? "open" : ""}`}>
+        <div className="sidebar-brand" onClick={() => onNavigate("landing")} style={{ cursor: "pointer" }}>
+          <div className="sidebar-brand-mark">
+            <LayersIcon size={24} strokeWidth={2.2} />
+          </div>
+          <div className="sidebar-brand-text">
+            <span className="sidebar-brand-name">Scaffold</span>
+            <span className="sidebar-brand-tagline">Manga, together.</span>
+          </div>
+        </div>
+
+        <nav className="nav-list">
+          {NAV_ITEMS.map((item, i) => (
+            <button
+              key={item.label}
+              className={`nav-item ${i === 0 ? "active" : ""}`}
+              onClick={() => {
+                if (item.label === "Dashboard") onNavigate("dashboard");
+                if (item.label === "Projects") onNavigate("projects");
+              }}
+            >
+              <item.icon size={17} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-user">
+          <div className="user-avatar">{PEOPLE.obi.initial}</div>
+          <div className="user-meta">
+            <span className="user-name">Obi</span>
+            <span className="user-email">obi@scaffold.app</span>
+          </div>
+          <ChevronDown size={14} color="#8b8fa3" />
+        </div>
+      </aside>
+
+      <div className="main-area">
+        <div className="topbar">
+          <div className="topbar-left">
+            <button className="menu-btn" onClick={() => setNavOpen(true)} aria-label="Open menu">
+              <Menu size={20} />
+            </button>
+            <div className="search-box">
+              <Search size={15} />
+              <input placeholder="Search projects, rooms..." />
+              <span className="kbd">\u2318K</span>
+            </div>
+          </div>
+          <div className="topbar-right">
+            <div className="bell-wrap">
+              <Bell size={19} />
+              <span className="bell-badge">3</span>
+            </div>
+            <div className="profile-chip">
+              <div className="profile-avatar">{PEOPLE.obi.initial}</div>
+              <span className="profile-name">Obi</span>
+              <ChevronDown size={14} color="#8b8fa3" />
+            </div>
+          </div>
+        </div>
+
+        <div className="content-wrap">
+          <div className="main-col">
+            <h1 className="greeting-title fade-in">Good evening, Obi \ud83d\udc4b</h1>
+            <p className="greeting-sub fade-in" style={{ animationDelay: "0.05s" }}>
+              Let's continue building something amazing today.
+            </p>
+
+            <div className="action-row fade-in" style={{ animationDelay: "0.1s" }}>
+              <button className="action-btn action-primary">
+                <Plus size={16} /> <span>New Project</span>
+              </button>
+              <button className="action-btn action-secondary">
+                <Users size={16} /> <span>Join or Create Room</span>
+              </button>
+              <button className="action-btn action-secondary">
+                <LayoutTemplate size={16} /> <span>Start from Template</span>
+              </button>
+            </div>
+
+            <div className="section-header fade-in" style={{ animationDelay: "0.14s" }}>
+              <span className="section-title">Continue Working</span>
+            </div>
+
+            <div className="continue-card fade-in" style={{ animationDelay: "0.16s" }}>
+              <div className="continue-thumb">
+                <ScreenTone dotGap={9} speed />
+              </div>
+              <div className="continue-body">
+                <div className="continue-top">
+                  <StatusBadge status="IN PROGRESS" />
+                  <button className="icon-btn" aria-label="More options">
+                    <MoreHorizontal size={16} />
+                  </button>
+                </div>
+                <h2 className="continue-title">Re:Bound \u2013 Chapter 13</h2>
+                <div className="progress-row">
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${progress}%` }} />
+                  </div>
+                  <span className="progress-label">{progress}% complete</span>
+                </div>
+                <div className="continue-meta-row">
+                  <div className="meta-left">
+                    <AvatarStack people={[PEOPLE.ren, PEOPLE.mika, PEOPLE.kai]} extra={2} />
+                    <span className="updated-note">
+                      <Clock size={12} /> Updated 2h ago
+                    </span>
+                  </div>
+                  <button className="open-project-btn">Open Project</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="section-header">
+              <span className="section-title">Your Projects</span>
+              <button className="view-all">View all</button>
+            </div>
+            <div className="projects-grid">
+              {DASHBOARD_PROJECTS.map((p, i) => (
+                <div
+                  className="project-card fade-in"
+                  key={p.title}
+                  style={{ animationDelay: `${0.05 * i}s` }}
+                >
+                  <div className="project-thumb-wrap">
+                    <ScreenTone dotGap={p.dotGap} speed={p.speed} />
+                    <StatusBadge status={p.status} />
+                  </div>
+                  <div className="project-info">
+                    <h3 className="project-title">{p.title}</h3>
+                    <div className="project-footer">
+                      <AvatarStack people={p.people} extra={p.extra} />
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span className="project-updated">Updated {p.updated}</span>
+                        <button className="icon-btn" aria-label="More options">
+                          <MoreHorizontal size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="section-header">
+              <span className="section-title">Start from a Manga Page Template</span>
+              <button className="view-all">View all templates</button>
+            </div>
+            <div className="templates-row">
+              {TEMPLATES.map((t) => (
+                <div className="template-card" key={t.name}>
+                  <TemplateThumb layout={t.layout} />
+                  <div>
+                    <div className="template-name">{t.name}</div>
+                    <div className="template-tag">{t.tag}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="side-col">
+            <div className="panel-card">
+              <div className="section-header">
+                <span className="section-title">Active Rooms</span>
+                <button className="view-all">View all</button>
+              </div>
+              {ROOMS.map((r, i) => (
+                <div className="room-row" key={r.name}>
+                  <div
+                    className="room-avatar"
+                    style={{ background: Object.values(PEOPLE)[i % 5].color }}
+                  >
+                    {r.name[0]}
+                  </div>
+                  <div className="room-meta">
+                    <div className="room-name">{r.name}</div>
+                    <div className="room-members">{r.members} members</div>
+                  </div>
+                  <div className="status-dot" />
+                </div>
+              ))}
+            </div>
+
+            <div className="panel-card">
+              <div className="section-header">
+                <span className="section-title">Recent Activity</span>
+                <button className="view-all">View all</button>
+              </div>
+              {ACTIVITY.map((a, i) => (
+                <div className="activity-row" key={i}>
+                  <div className="activity-avatar" style={{ background: a.who.color }}>
+                    {a.who.initial}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="activity-text">
+                      <b>{a.name}</b> {a.action} <b>{a.target}</b>
+                    </div>
+                    <div className="activity-time">{a.time}</div>
+                  </div>
+                  {a.unread && <div className="unread-dot" />}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* ============================== PROJECTS ============================== */
+/* ---------- shared palette (same as Dashboard) ---------- */
+const TABS = ["All Projects", "My Projects", "Collaborating", "Archived"];
+
+const ALL_PROJECTS = [
+  { title: "Re:Bound \u2013 Chapter 13", status: "IN PROGRESS", updated: "2h ago", pages: 24, people: [PEOPLE.ren, PEOPLE.mika, PEOPLE.kai], extra: 2, dotGap: 9, speed: true },
+  { title: "City Backgrounds", status: "REVIEW", updated: "1d ago", pages: 12, people: [PEOPLE.ren, PEOPLE.mika, PEOPLE.kai], extra: 1, dotGap: 13 },
+  { title: "Slice of Life \u2013 Vol. 1", status: "PLANNING", updated: "3d ago", pages: 36, people: [PEOPLE.mika, PEOPLE.yuna, PEOPLE.kai], extra: 0, dotGap: 10 },
+  { title: "Action Scenes Pack", status: "DRAFT", updated: "5d ago", pages: 18, people: [PEOPLE.kai, PEOPLE.yuna, PEOPLE.mika], extra: 1, dotGap: 8, speed: true },
+  { title: "Fantasy World Pack", status: "EDITING", updated: "5d ago", pages: 27, people: [PEOPLE.ren, PEOPLE.mika, PEOPLE.kai], extra: 0, dotGap: 12 },
+  { title: "Character Expressions", status: "DRAFT", updated: "1d ago", pages: 15, people: [PEOPLE.ren, PEOPLE.obi, PEOPLE.yuna], extra: 0, dotGap: 15 },
+  { title: "Shonen Action Pack", status: "IN PROGRESS", updated: "6h ago", pages: 20, people: [PEOPLE.obi, PEOPLE.yuna, PEOPLE.ren], extra: 3, dotGap: 9, speed: true },
+  { title: "Environmental Studies", status: "PLANNING", updated: "1w ago", pages: 10, people: [PEOPLE.kai, PEOPLE.ren, PEOPLE.mika], extra: 0, dotGap: 16 },
+  { title: "One Shot \u2013 Prototype", status: "ON HOLD", updated: "2w ago", pages: 32, people: [PEOPLE.yuna, PEOPLE.mika, PEOPLE.kai], extra: 0, dotGap: 11 },
+  { title: "Manga Panel Layouts", status: "DRAFT", updated: "3d ago", pages: 8, people: [PEOPLE.ren, PEOPLE.obi, PEOPLE.kai], extra: 1, dotGap: 14 },
+];
+
+function ProjectsPage({ onNavigate }) {
+  const [navOpen, setNavOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [sortDesc, setSortDesc] = useState(true);
+  const [page, setPage] = useState(1);
+
+  const pinned = ALL_PROJECTS.slice(0, 4);
+  const totalPages = 8;
+
+  const pageButtons = [1, 2, 3, "...", totalPages];
+
+  return (
+    <div className="proj-root">
+      <style>{`
+        .proj-root {
+          --bg: #06070b;
+          --panel: #101218;
+          --sidebar-bg: #0a0b10;
+          --border: #21242e;
+          --text: #f2f3f6;
+          --text-muted: #8b8fa3;
+          --accent: #3E6FF0;
+          --accent-hover: #5580f5;
+          --accent-soft: rgba(62, 111, 240, 0.14);
+          --radius: 14px;
+
+          min-height: 100vh;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
+          display: flex;
+        }
+        .proj-root * { box-sizing: border-box; }
+
+        /* ---------- Sidebar (shared shell) ---------- */
+        .sidebar {
+          width: 232px; flex-shrink: 0;
+          background: var(--sidebar-bg);
+          border-right: 1px solid var(--border);
+          display: flex; flex-direction: column;
+          position: sticky; top: 0; height: 100vh;
+          padding: 22px 14px;
+          transition: transform 0.25s ease;
+          z-index: 30;
+        }
+        .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 22px; }
+        .sidebar-brand-mark { color: var(--accent); display: flex; }
+        .sidebar-brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+        .sidebar-brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; }
+        .sidebar-brand-tagline { font-size: 11px; color: var(--text-muted); }
+        .nav-list { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+        .nav-item {
+          display: flex; align-items: center; gap: 11px;
+          padding: 9px 12px; border-radius: 9px;
+          font-size: 13.5px; font-weight: 500; color: var(--text-muted);
+          background: transparent; border: none; cursor: pointer;
+          text-align: left; width: 100%;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+        .nav-item.active { background: var(--accent); color: #fff; }
+        .sidebar-user {
+          display: flex; align-items: center; gap: 10px; padding: 10px;
+          border-radius: 10px; border-top: 1px solid var(--border);
+          margin-top: 8px; padding-top: 16px; cursor: pointer;
+        }
+        .user-avatar {
+          width: 32px; height: 32px; border-radius: 50%; background: ${PEOPLE.obi.color};
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12.5px; font-weight: 700; color: #14161c; flex-shrink: 0;
+        }
+        .user-meta { display: flex; flex-direction: column; line-height: 1.25; flex: 1; min-width: 0; }
+        .user-name { font-size: 13px; font-weight: 600; }
+        .user-email { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sidebar-backdrop { display: none; }
+
+        @media (max-width: 1024px) {
+          .sidebar { position: fixed; left: 0; transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.4); }
+          .sidebar.open { transform: translateX(0); }
+          .sidebar-backdrop.open { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 25; }
+        }
+
+        /* ---------- Main / topbar (shared shell) ---------- */
+        .main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .topbar {
+          display: flex; align-items: center; justify-content: space-between; gap: 16px;
+          padding: 18px 32px; border-bottom: 1px solid var(--border);
+          position: sticky; top: 0; background: rgba(6,7,11,0.85); backdrop-filter: blur(8px);
+          z-index: 10;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; justify-content: center; }
+        .menu-btn { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 4px; }
+        .search-box {
+          display: flex; align-items: center; gap: 8px;
+          background: var(--panel); border: 1px solid var(--border);
+          border-radius: 10px; padding: 8px 12px; max-width: 420px; width: 100%;
+          color: var(--text-muted); font-size: 13.5px;
+        }
+        .search-box input { background: none; border: none; outline: none; color: var(--text); font-size: 13.5px; width: 100%; font-family: 'Inter', sans-serif; }
+        .search-box input::placeholder { color: var(--text-muted); }
+        .kbd { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; }
+        .topbar-right { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
+        .bell-wrap { position: relative; color: var(--text-muted); cursor: pointer; display: flex; }
+        .bell-wrap:hover { color: var(--text); }
+        .bell-badge {
+          position: absolute; top: -5px; right: -6px; background: var(--accent); color: #fff;
+          font-size: 9.5px; font-weight: 700; width: 15px; height: 15px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .profile-chip { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .profile-avatar {
+          width: 30px; height: 30px; border-radius: 50%; background: ${PEOPLE.obi.color};
+          display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #14161c;
+        }
+        .profile-name { font-size: 13.5px; font-weight: 600; }
+
+        .content-wrap { display: flex; gap: 24px; padding: 28px 32px 60px; align-items: flex-start; }
+        .main-col { flex: 1; min-width: 0; }
+        .side-col { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
+
+        .fade-in { opacity: 0; transform: translateY(10px); animation: fadeUp 0.5s ease forwards; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* ---------- Page header ---------- */
+        .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 25px; font-weight: 700; margin: 0 0 4px; }
+        .page-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 20px; }
+
+        .tabs-row {
+          display: flex; align-items: center; justify-content: space-between;
+          border-bottom: 1px solid var(--border); margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+        }
+        .tabs-left { display: flex; gap: 22px; }
+        .tab-item {
+          background: none; border: none; cursor: pointer;
+          font-size: 13.5px; font-weight: 600; color: var(--text-muted);
+          padding: 0 0 12px; position: relative;
+        }
+        .tab-item.active { color: var(--text); }
+        .tab-item.active::after {
+          content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent);
+        }
+        .tabs-right { display: flex; gap: 10px; padding-bottom: 10px; }
+        .filter-btn, .sort-btn {
+          display: flex; align-items: center; gap: 7px;
+          background: var(--panel); border: 1px solid var(--border); color: var(--text);
+          font-size: 13px; font-weight: 500; padding: 8px 14px; border-radius: 9px; cursor: pointer;
+          transition: border-color 0.15s ease;
+        }
+        .filter-btn:hover, .sort-btn:hover { border-color: #34394a; }
+
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .section-title { font-size: 15.5px; font-weight: 700; }
+        .view-all { font-size: 12.5px; color: var(--accent); background: none; border: none; cursor: pointer; }
+        .view-all:hover { color: var(--accent-hover); text-decoration: underline; }
+
+        /* ---------- Pinned grid ---------- */
+        .pinned-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 36px; }
+        .project-card {
+          background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+          overflow: hidden; transition: border-color 0.2s ease, transform 0.2s ease; display: flex; flex-direction: column;
+        }
+        .project-card:hover { border-color: #34394a; transform: translateY(-2px); }
+        .project-thumb-wrap { position: relative; height: 150px; }
+        .status-badge {
+          position: absolute; top: 10px; left: 10px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em;
+          padding: 4px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+        }
+        .project-info { padding: 12px 14px 14px; }
+        .project-title { font-size: 13.5px; font-weight: 600; margin: 0 0 10px; }
+        .project-footer { display: flex; align-items: center; justify-content: space-between; }
+        .project-updated { font-size: 11px; color: var(--text-muted); }
+
+        .avatar-stack { display: flex; align-items: center; }
+        .avatar-chip {
+          width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          font-size: 9px; font-weight: 700; color: #10121a; border: 2px solid var(--panel); margin-left: -6px;
+        }
+        .avatar-chip:first-child { margin-left: 0; }
+        .avatar-extra { background: #2b2e3a !important; color: var(--text-muted) !important; font-size: 8.5px; }
+
+        .tone { position: relative; width: 100%; height: 100%; background: #1b1d26; overflow: hidden; }
+        .tone-dots { position: absolute; inset: 0; opacity: 0.5; }
+        .tone-speed { position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255,255,255,0.06) 0 1.5px, transparent 1.5px 20px); mix-blend-mode: screen; }
+
+        /* ---------- Table ---------- */
+        .table-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .table-head, .table-row {
+          display: grid;
+          grid-template-columns: 2.2fr 1.1fr 0.6fr 1fr 0.9fr 32px;
+          align-items: center; gap: 12px;
+          padding: 12px 18px;
+        }
+        .table-head { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--border); }
+        .table-row { border-bottom: 1px solid var(--border); transition: background 0.15s ease; }
+        .table-row:last-child { border-bottom: none; }
+        .table-row:hover { background: rgba(255,255,255,0.025); }
+        .cell-project { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .row-thumb { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+        .row-title { font-size: 13.5px; font-weight: 600; }
+        .row-updated { font-size: 11.5px; color: var(--text-muted); }
+        .cell-pages { font-size: 13px; color: var(--text); }
+        .cell-lastupdated { font-size: 12.5px; color: var(--text-muted); }
+        .row-menu-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+        .row-menu-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+        /* ---------- Pagination ---------- */
+        .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 20px 0 4px; }
+        .page-nav-btn {
+          width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+          background: var(--panel); border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+          cursor: pointer; transition: border-color 0.15s ease;
+        }
+        .page-nav-btn:hover { border-color: #34394a; }
+        .page-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-num {
+          min-width: 32px; height: 32px; padding: 0 6px; display: flex; align-items: center; justify-content: center;
+          background: transparent; border: 1px solid transparent; border-radius: 8px; color: var(--text-muted);
+          font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .page-num:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+        .page-num.active { background: var(--accent); color: #fff; }
+        .page-ellipsis { color: var(--text-muted); font-size: 13px; padding: 0 2px; }
+
+        /* ---------- Right sidebar ---------- */
+        .panel-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+        .create-new-item {
+          display: flex; align-items: center; gap: 12px;
+          padding: 10px; border-radius: 10px; cursor: pointer;
+          transition: background 0.15s ease; margin-bottom: 6px;
+        }
+        .create-new-item:last-child { margin-bottom: 0; }
+        .create-new-item:hover { background: rgba(255,255,255,0.04); }
+        .create-icon {
+          width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center; color: #fff;
+        }
+        .create-title { font-size: 13.5px; font-weight: 600; }
+        .create-sub { font-size: 11.5px; color: var(--text-muted); }
+
+        .room-row, .activity-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+        .activity-avatar {
+          width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #10121a;
+        }
+        .activity-text { font-size: 12.5px; line-height: 1.4; }
+        .activity-text b { font-weight: 600; }
+        .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .activity-row { align-items: flex-start; position: relative; }
+        .unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); position: absolute; right: 0; top: 12px; }
+
+        @media (max-width: 1180px) {
+          .side-col { width: 240px; }
+          .pinned-grid { grid-template-columns: repeat(3, 1fr); }
+          .table-head, .table-row { grid-template-columns: 2fr 1fr 0.5fr 0.9fr 32px; }
+          .cell-lastupdated { display: none; }
+        }
+
+        @media (max-width: 1024px) {
+          .menu-btn { display: flex; }
+          .content-wrap { flex-direction: column; }
+          .side-col { width: 100%; flex-direction: row; overflow-x: auto; }
+          .side-col .panel-card { min-width: 280px; }
+          .topbar-left { justify-content: flex-start; }
+        }
+
+        @media (max-width: 780px) {
+          .pinned-grid { grid-template-columns: repeat(2, 1fr); }
+          .search-box { max-width: 220px; }
+          .side-col { flex-direction: column; }
+          .table-head { display: none; }
+          .table-row {
+            grid-template-columns: 1fr; row-gap: 6px; padding: 14px 16px;
+          }
+          .cell-pages::before { content: "Pages: "; color: var(--text-muted); }
+          .cell-status { order: 2; }
+          .row-menu-btn { position: absolute; top: 14px; right: 14px; }
+          .table-row { position: relative; }
+        }
+
+        @media (max-width: 520px) {
+          .topbar { padding: 14px 16px; }
+          .content-wrap { padding: 20px 16px 40px; }
+          .pinned-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+          .kbd { display: none; }
+          .profile-name { display: none; }
+          .tabs-left { gap: 14px; overflow-x: auto; }
+        }
+      `}</style>
+
+      <div className={`sidebar-backdrop ${navOpen ? "open" : ""}`} onClick={() => setNavOpen(false)} />
+
+      <aside className={`sidebar ${navOpen ? "open" : ""}`}>
+        <div className="sidebar-brand" onClick={() => onNavigate("landing")} style={{ cursor: "pointer" }}>
+          <div className="sidebar-brand-mark"><LayersIcon size={24} strokeWidth={2.2} /></div>
+          <div className="sidebar-brand-text">
+            <span className="sidebar-brand-name">Scaffold</span>
+            <span className="sidebar-brand-tagline">Manga, together.</span>
+          </div>
+        </div>
+        <nav className="nav-list">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.label}
+              className={`nav-item ${item.label === "Projects" ? "active" : ""}`}
+              onClick={() => {
+                if (item.label === "Dashboard") onNavigate("dashboard");
+                if (item.label === "Projects") onNavigate("projects");
+              }}
+            >
+              <item.icon size={17} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-user">
+          <div className="user-avatar">{PEOPLE.obi.initial}</div>
+          <div className="user-meta">
+            <span className="user-name">Obi</span>
+            <span className="user-email">obi@scaffold.app</span>
+          </div>
+          <ChevronDown size={14} color="#8b8fa3" />
+        </div>
+      </aside>
+
+      <div className="main-area">
+        <div className="topbar">
+          <div className="topbar-left">
+            <button className="menu-btn" onClick={() => setNavOpen(true)} aria-label="Open menu">
+              <Menu size={20} />
+            </button>
+            <div className="search-box">
+              <Search size={15} />
+              <input placeholder="Search projects, rooms, members..." />
+              <span className="kbd">\u2318K</span>
+            </div>
+          </div>
+          <div className="topbar-right">
+            <div className="bell-wrap">
+              <Bell size={19} />
+              <span className="bell-badge">3</span>
+            </div>
+            <div className="profile-chip">
+              <div className="profile-avatar">{PEOPLE.obi.initial}</div>
+              <span className="profile-name">Obi</span>
+              <ChevronDown size={14} color="#8b8fa3" />
+            </div>
+          </div>
+        </div>
+
+        <div className="content-wrap">
+          <div className="main-col">
+            <h1 className="page-title fade-in">Projects</h1>
+            <p className="page-sub fade-in" style={{ animationDelay: "0.04s" }}>
+              All your manga projects in one place.
+            </p>
+
+            <div className="tabs-row fade-in" style={{ animationDelay: "0.08s" }}>
+              <div className="tabs-left">
+                {TABS.map((t, i) => (
+                  <button
+                    key={t}
+                    className={`tab-item ${activeTab === i ? "active" : ""}`}
+                    onClick={() => setActiveTab(i)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div className="tabs-right">
+                <button className="filter-btn">
+                  <Filter size={14} /> Filter
+                </button>
+                <button className="sort-btn" onClick={() => setSortDesc((v) => !v)}>
+                  <ArrowUpDown size={14} /> Last Updated
+                  <ChevronDown size={13} />
+                </button>
+              </div>
+            </div>
+
+            <div className="section-header">
+              <span className="section-title">Pinned Projects</span>
+              <button className="view-all">View all</button>
+            </div>
+            <div className="pinned-grid">
+              {pinned.map((p, i) => (
+                <div className="project-card fade-in" key={p.title} style={{ animationDelay: `${0.05 * i}s` }}>
+                  <div className="project-thumb-wrap">
+                    <ScreenTone dotGap={p.dotGap} speed={p.speed} />
+                    <StatusBadge status={p.status} />
+                  </div>
+                  <div className="project-info">
+                    <h3 className="project-title">{p.title}</h3>
+                    <div className="project-footer">
+                      <AvatarStack people={p.people} extra={p.extra} />
+                    </div>
+                    <div className="project-updated" style={{ marginTop: "8px" }}>
+                      Updated {p.updated}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="section-header">
+              <span className="section-title">All Projects</span>
+            </div>
+            <div className="table-card">
+              <div className="table-head">
+                <span>Project</span>
+                <span>Members</span>
+                <span>Pages</span>
+                <span>Status</span>
+                <span>Last Updated</span>
+                <span />
+              </div>
+              {ALL_PROJECTS.map((p, i) => (
+                <div className="table-row fade-in" key={p.title} style={{ animationDelay: `${0.03 * i}s` }}>
+                  <div className="cell-project">
+                    <div className="row-thumb">
+                      <ScreenTone dotGap={p.dotGap} speed={p.speed} />
+                    </div>
+                    <div>
+                      <div className="row-title">{p.title}</div>
+                      <div className="row-updated">Updated {p.updated}</div>
+                    </div>
+                  </div>
+                  <AvatarStack people={p.people} extra={p.extra} />
+                  <span className="cell-pages">{p.pages}</span>
+                  <div className="cell-status">
+                    <StatusBadge status={p.status} />
+                  </div>
+                  <span className="cell-lastupdated">{p.updated}</span>
+                  <button className="row-menu-btn" aria-label="More options">
+                    <MoreHorizontal size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="pagination">
+              <button
+                className="page-nav-btn"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              {pageButtons.map((n, i) =>
+                n === "..." ? (
+                  <span className="page-ellipsis" key={`e${i}`}>&hellip;</span>
+                ) : (
+                  <button
+                    key={n}
+                    className={`page-num ${page === n ? "active" : ""}`}
+                    onClick={() => setPage(n)}
+                  >
+                    {n}
+                  </button>
+                )
+              )}
+              <button
+                className="page-nav-btn"
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label="Next page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className="side-col">
+            <div className="panel-card">
+              <div className="section-header">
+                <span className="section-title">Create New</span>
+              </div>
+              <div className="create-new-item">
+                <div className="create-icon" style={{ background: "#3E6FF0" }}>
+                  <Plus size={17} />
+                </div>
+                <div>
+                  <div className="create-title">New Project</div>
+                  <div className="create-sub">Start a blank project from scratch</div>
+                </div>
+              </div>
+              <div className="create-new-item">
+                <div className="create-icon" style={{ background: "#8B5CF6" }}>
+                  <Grid3x3 size={17} />
+                </div>
+                <div>
+                  <div className="create-title">Use Template</div>
+                  <div className="create-sub">Start from a manga page template</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="panel-card">
+              <div className="section-header">
+                <span className="section-title">Recent Activity</span>
+                <button className="view-all">View all</button>
+              </div>
+              {ACTIVITY.map((a, i) => (
+                <div className="activity-row" key={i}>
+                  <div className="activity-avatar" style={{ background: a.who.color }}>
+                    {a.who.initial}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="activity-text">
+                      <b>{a.name}</b> {a.action} <b>{a.target}</b>
+                    </div>
+                    <div className="activity-time">{a.time}</div>
+                  </div>
+                  {a.unread && <div className="unread-dot" />}
+                </div>
+              ))}
+              <button className="view-all" style={{ marginTop: "10px" }}>
+                View all activity &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   App shell — simple state-based navigation between the four
+   pages so the buttons on Landing actually take you somewhere.
+   ============================================================ */
+export default function App() {
+  const [page, setPage] = useState("landing");
+  const [authMode, setAuthMode] = useState("signin");
+
+  const navigate = (dest, mode) => {
+    if (dest === "auth" && mode) setAuthMode(mode);
+    setPage(dest);
+    window.scrollTo(0, 0);
+  };
+
+  if (page === "auth") return <AuthPage initialMode={authMode} onNavigate={navigate} />;
+  if (page === "dashboard") return <DashboardPage onNavigate={navigate} />;
+  if (page === "projects") return <ProjectsPage onNavigate={navigate} />;
+  return <LandingPage onNavigate={navigate} />;
+}

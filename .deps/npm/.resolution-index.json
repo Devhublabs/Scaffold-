@@ -1,0 +1,52 @@
+{
+  "/storagefactory.sol": {
+    "./simple.sol": "simple.sol",
+    "__sources__": {
+      "/storagefactory.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.18;// solidity version\n\n\nimport \"./simple.sol\";\n\n\ncontract StorageFactory{\nsimplestorage public simpleStorage;\n\n    function createsimplestoragecontract() public {\n        simpleStorage = new simplestorage();\n\n    }\n    function sfstorage(uint256_simplestorageindex, uint256 _newsimplestoragenumber) public {\n\n}",
+        "file": "/storagefactory.sol"
+      },
+      "simple.sol": {
+        "content": "   // SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;// solidity version\r\n\r\ncontract simplestorage {\r\n  bool hasFavouriteNumber = true;\r\n\r\nuint256 myfavoriteNumber;// 0\r\nuint256 listOfFavoriteNumbers;// [0, 76, 44]\r\n\r\nstruct person{\r\n  uint256 favoriteNumber;\r\n   string name;\r\n\r\n\r\n}\r\nperson public ronald = person(3, \"ronald\");\r\nperson public obi = person(12, \"obi\");\r\nperson public Davis = person(7, \"Davis\");\r\n \r\n  uint256 favouriteNumber = 97;\r\n  string favoriteNumberInText = \"66\";\r\n  address myAddress = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;\r\n  bytes32 favorite32 = \"dog\";\r\n\r\nfunction store(uint256 _favouriteNumber) public {\r\n    favouriteNumber = _favouriteNumber;\r\n}\r\n}",
+        "file": "simple.sol"
+      }
+    }
+  },
+  "/simple.sol": {
+    "__sources__": {
+      "/simple.sol": {
+        "content": "   // SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;// solidity version\r\n\r\ncontract simplestorage {\r\n  bool hasFavouriteNumber = true;\r\n\r\nuint256 myfavoriteNumber;// 0\r\nuint256 listOfFavoriteNumbers;// [0, 76, 44]\r\n\r\nstruct person{\r\n  uint256 favoriteNumber;\r\n   string name;\r\n\r\n\r\n}\r\nperson public ronald = person(3, \"ronald\");\r\nperson public obi = person(12, \"obi\");\r\nperson public Davis = person(7, \"Davis\");\r\n \r\n  uint256 favouriteNumber = 97;\r\n  string favoriteNumberInText = \"66\";\r\n  address myAddress = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;\r\n  bytes32 favorite32 = \"dog\";\r\n\r\nfunction store(uint256 _favouriteNumber) public {\r\n    favouriteNumber = _favouriteNumber;\r\n}\r\n}",
+        "file": "/simple.sol"
+      }
+    }
+  },
+  "storagefactory.sol": {
+    "./simple.sol": "simple.sol",
+    "__sources__": {
+      "storagefactory.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.18;// solidity version\n\n\nimport \"./simple.sol\";\n\n\ncontract StorageFactory{\nsimplestorage public simpleStorage;\n\n    function createsimplestoragecontract() public {\n        simpleStorage = new simplestorage();\n\n    }\n    function sfstorage(uint256 _simplestorageindex, uint256 _newsimplestoragenumber) public {\n\n}\n}",
+        "file": "storagefactory.sol"
+      },
+      "simple.sol": {
+        "content": "   // SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;// solidity version\r\n\r\ncontract simplestorage {\r\n  bool hasFavouriteNumber = true;\r\n\r\nuint256 myfavoriteNumber;// 0\r\nuint256 listOfFavoriteNumbers;// [0, 76, 44]\r\n\r\nstruct person{\r\n  uint256 favoriteNumber;\r\n   string name;\r\n\r\n\r\n}\r\nperson public ronald = person(3, \"ronald\");\r\nperson public obi = person(12, \"obi\");\r\nperson public Davis = person(7, \"Davis\");\r\n \r\n  uint256 favouriteNumber = 97;\r\n  string favoriteNumberInText = \"66\";\r\n  address myAddress = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;\r\n  bytes32 favorite32 = \"dog\";\r\n\r\nfunction store(uint256 _favouriteNumber) public {\r\n    favouriteNumber = _favouriteNumber;\r\n}\r\n}",
+        "file": "simple.sol"
+      }
+    }
+  },
+  "simple.sol": {
+    "__sources__": {
+      "simple.sol": {
+        "content": "   // SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;// solidity version\r\n\r\ncontract simplestorage {\r\n  bool hasFavouriteNumber = true;\r\n\r\nuint256 myfavoriteNumber;// 0\r\nuint256 listOfFavoriteNumbers;// [0, 76, 44]\r\n\r\nstruct person{\r\n  uint256 favoriteNumber;\r\n   string name;\r\n\r\n\r\n}\r\nperson public ronald = person(3, \"ronald\");\r\nperson public obi = person(12, \"obi\");\r\nperson public Davis = person(7, \"Davis\");\r\n \r\n  uint256 favouriteNumber = 97;\r\n  string favoriteNumberInText = \"66\";\r\n  address myAddress = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;\r\n  bytes32 favorite32 = \"dog\";\r\n\r\nfunction store(uint256 _favouriteNumber) public {\r\n    favouriteNumber = _favouriteNumber;\r\n}\r\n}",
+        "file": "simple.sol"
+      }
+    }
+  },
+  "fundme.sol": {
+    "__sources__": {
+      "fundme.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;\r\n\r\ncontract fundme{\r\n    function fund() public payable { \r\n        // to send eth\r\n    \r\n    // allow users to send money\r\n    // aloow users to withdraw\r\n    require(msg.value > 1e18); \r\n    }\r\n\r\n\r\n\r\n    function withdraw() public {}\r\n}",
+        "file": "fundme.sol"
+      }
+    }
+  }
+}
