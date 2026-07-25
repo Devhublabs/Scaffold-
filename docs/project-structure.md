@@ -1,110 +1,22 @@
-# Project structure
+# Scaffold — Project Structure
 
-This document is the canonical reference for Scaffold's directory structure and must be updated whenever folders or files are added, removed or renamed.
+Full directory tree as of current development state.
+Update this file when adding new modules or significant new files.
 
-This guide describes the repository layout and the purpose of each major area. It complements [README.md](../README.md) without repeating the project overview.
-
-Whenever files or folders are added, removed, renamed or reorganized, this document must be updated in the same commit or pull request.
-
-## Repository tree
-
-```text
-Scaffold/
-├── backend-node/
-│   ├── app.js
-│   ├── config/
-│   │   ├── cors.js
-│   │   └── db.js
-│   ├── controllers/
-│   │   └── authController.js
-│   ├── Dockerfile
-│   ├── exports/
-│   ├── middleware/
-│   │   └── requireAuth.js
-│   ├── models/
-│   │   └── User.js
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── routes/
-│   │   └── authRoutes.js
-│   ├── server.js
-│   ├── services/
-│   │   └── authService.js
-│   ├── test/
-│   │   └── auth.test.js
-│   └── utils/
-│       └── jwt.js
-├── backend-python/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── co_artist.py
-│   │   │   ├── __init__.py
-│   │   │   └── voice.py
-│   │   ├── database/
-│   │   │   └── connection.py
-│   │   ├── models/
-│   │   ├── services/
-│   │   │   ├── auth_service.py
-│   │   │   ├── canvas_service.py
-│   │   │   ├── co_artist_service.py
-│   │   │   ├── room_service.py
-│   │   │   ├── skeleton_service.py
-│   │   │   ├── voice_service.py
-│   │   │   └── skeleton/
-│   │   │       ├── fk.py
-│   │   │       ├── proportions_resolver.py
-│   │   │       ├── rig.py
-│   │   │       ├── silhouette.py
-│   │   │       └── volumes.py
-│   │   ├── sockets/
-│   │   │   └── events.py
-│   │   └── utils/
-│   ├── conftest.py
-│   ├── Dockerfile
-│   ├── main.py
-│   ├── pytest.ini
-│   ├── requirements-dev.txt
-│   ├── requirements.txt
-│   └── tests/
-│       ├── test_auth_service.py
-│       ├── test_canvas_persistence.py
-│       ├── test_canvas_service.py
-│       ├── test_co_artist_service.py
-│       ├── test_co_artist_skeleton_api.py
-│       ├── test_fk.py
-│       ├── test_proportions_resolver.py
-│       ├── test_room_service.py
-│       ├── test_silhouette.py
-│       ├── test_skeleton_service.py
-│       ├── test_socket_auth.py
-│       ├── test_sockets.py
-│       └── test_volumes.py
-├── docker-compose.yml
-├── docs/
-│   ├── co-artist-mode1-plan.md
-│   ├── project-structure.md
-│   └── Scaffold_PRD.pdf
+```
+scaffold/
 ├── frontend/
-│   ├── Dockerfile
-│   ├── dist/ (generated build output)
-│   ├── eslint.config.js
-│   ├── index.html
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── public/
 │   ├── src/
-│   │   ├── App.jsx
-│   │   ├── assets/
 │   │   ├── canvas/
 │   │   │   ├── brushes/
-│   │   │   │   ├── EraserBrush.js
-│   │   │   │   └── PressureBrush.js
+│   │   │   │   ├── EraserBrush.js          — eraser (draws in bg color, v1 placeholder)
+│   │   │   │   └── PressureBrush.js        — pressure-sensitive brush, pencil/pen factory methods
 │   │   │   ├── components/
-│   │   │   │   └── Canvas.jsx
-│   │   │   ├── history/
+│   │   │   │   └── Canvas.jsx              — main canvas component, brush switching, layer wiring
+│   │   │   ├── history/                    — undo/redo stack (planned expansion)
 │   │   │   ├── shapes/
 │   │   │   │   ├── constants/
-│   │   │   │   │   └── ShapeType.js
+│   │   │   │   │   └── ShapeType.js        — shape type enum
 │   │   │   │   ├── detectors/
 │   │   │   │   │   ├── arrowDetector.js
 │   │   │   │   │   ├── circleDetector.js
@@ -124,120 +36,128 @@ Scaffold/
 │   │   │   │   │   ├── fitSpeechBubble.js
 │   │   │   │   │   ├── fitStar.js
 │   │   │   │   │   ├── fitters.test.js
-│   │   │   │   │   └── fitUtils.js
-│   │   │   │   ├── ShapeFactory.js
-│   │   │   │   ├── snapToShape.js
-│   │   │   │   └── utils/
-│   │   │   ├── templates/
-│   │   │   └── tools/
-│   │   ├── components/
-│   │   ├── constants/
+│   │   │   │   │   └── fitUtils.js         — shared geometry helpers
+│   │   │   │   ├── utils/
+│   │   │   │   │   ├── angle.js
+│   │   │   │   │   ├── boundingBox.js
+│   │   │   │   │   ├── distance.js
+│   │   │   │   │   ├── geometry.js
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── ShapeFactory.js         — converts fitted geometry into Fabric objects
+│   │   │   │   └── snapToShape.js          — orchestrates full snap-to-shape pipeline
+│   │   │   ├── templates/                  — manga page/panel templates (planned)
+│   │   │   └── tools/                      — planned tool modules
+│   │   ├── assets/                         — static assets used within components (planned)
+│   │   ├── components/                     — shared UI components
+│   │   ├── constants/                      — app-wide constants
 │   │   ├── context/
-│   │   │   ├── layers-context.js
-│   │   │   └── LayersContext.jsx
-│   │   ├── hooks/
-│   │   ├── icons/
-│   │   ├── layouts/
-│   │   ├── main.jsx
+│   │   │   ├── layers-context.js           — stale duplicate of LayersContext.jsx, pending removal
+│   │   │   └── LayersContext.jsx           — layer state, addLayer, toggleVisibility, addObjectToLayer
+│   │   ├── hooks/                          — custom React hooks
+│   │   ├── icons/                          — icon assets
+│   │   ├── layouts/                        — shared page layout components
 │   │   ├── pages/
-│   │   │   ├── Auth/
-│   │   │   ├── Dashboard/
-│   │   │   ├── Export/
-│   │   │   ├── Landing/
-│   │   │   ├── Room/
-│   │   │   └── Workspace/
-│   │   ├── services/
+│   │   │   ├── Auth/                       — Sign in / Sign up (Davis)
+│   │   │   ├── Dashboard/                  — main dashboard (Davis)
+│   │   │   ├── Export/                     — PNG/PDF export (Davis)
+│   │   │   ├── Landing/                    — public landing page (Davis)
+│   │   │   ├── Room/                       — room creation / join (Davis)
+│   │   │   └── Workspace/                  — canvas workspace UI markup (Davis)
+│   │   │       # Members, Projects, Settings, and Templates are planned
+│   │   │       # pages but don't have folders yet
+│   │   ├── services/                       — API service wrappers
 │   │   ├── socket/
-│   │   │   └── socket.js
+│   │   │   └── socket.js                   — singleton Socket.IO client
 │   │   ├── styles/
-│   │   │   ├── components/
+│   │   │   ├── components/                 — component-scoped stylesheets (planned)
 │   │   │   ├── globals.css
-│   │   │   └── variables.css
-│   │   └── utils/
-│   └── vite.config.js
-├── LICENSE
-├── README.md
-└── structure.txt
+│   │   │   └── variables.css               — design system CSS custom properties
+│   │   ├── utils/                          — shared utility functions
+│   │   ├── App.jsx                         — root component, wraps canvas in LayersProvider
+│   │   └── main.jsx                        — React entry point
+│   ├── public/                             — static assets (logo, favicon)
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── vite.config.js
+│   └── eslint.config.js
+│
+├── backend-python/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── co_artist.py                — Co-Artist REST endpoints (proportions, skeleton)
+│   │   │   └── voice.py                    — Daily.co voice token endpoint
+│   │   ├── database/
+│   │   │   └── connection.py               — MongoDB Motor connection
+│   │   ├── models/                         — data models (planned)
+│   │   ├── services/
+│   │   │   ├── auth_service.py             — JWT verification, shared with Socket.IO auth
+│   │   │   ├── canvas_service.py           — stroke persistence and replay
+│   │   │   ├── co_artist_service.py        — Co-Artist orchestration
+│   │   │   ├── room_service.py             — in-memory room membership
+│   │   │   ├── skeleton_service.py         — skeleton pipeline entry point
+│   │   │   ├── voice_service.py            — Daily.co integration
+│   │   │   └── skeleton/
+│   │   │       ├── fk.py                   — forward kinematics
+│   │   │       ├── proportions_resolver.py — Groq response → proportion data
+│   │   │       ├── rig.py                  — joint rig definition
+│   │   │       ├── silhouette.py           — contour/silhouette generation
+│   │   │       └── volumes.py              — body volume construction
+│   │   ├── sockets/
+│   │   │   └── events.py                   — Socket.IO event handlers
+│   │   └── utils/                          — shared Python utilities
+│   ├── tests/
+│   │   ├── test_auth_service.py
+│   │   ├── test_canvas_persistence.py
+│   │   ├── test_canvas_service.py
+│   │   ├── test_co_artist_service.py
+│   │   ├── test_co_artist_skeleton_api.py
+│   │   ├── test_fk.py
+│   │   ├── test_proportions_resolver.py
+│   │   ├── test_room_service.py
+│   │   ├── test_silhouette.py
+│   │   ├── test_skeleton_service.py
+│   │   ├── test_socket_auth.py
+│   │   ├── test_sockets.py
+│   │   └── test_volumes.py
+│   ├── conftest.py
+│   ├── Dockerfile
+│   ├── main.py                             — FastAPI app + Socket.IO mount point
+│   ├── pytest.ini
+│   ├── requirements.txt
+│   └── requirements-dev.txt
+│
+├── backend-node/
+│   ├── config/
+│   │   ├── cors.js                         — CORS configuration
+│   │   └── db.js                           — MongoDB connection setup
+│   ├── controllers/
+│   │   └── authController.js               — signup / login / me handlers
+│   ├── exports/                            — export service (PNG/PDF, planned)
+│   ├── middleware/
+│   │   └── requireAuth.js                  — JWT-protected route guard
+│   ├── models/
+│   │   └── User.js                         — Mongoose user model
+│   ├── routes/
+│   │   └── authRoutes.js                   — /auth/signup, /auth/login, /auth/me
+│   ├── services/
+│   │   └── authService.js                  — auth business logic (hashing, token issuing)
+│   ├── test/
+│   │   └── auth.test.js                    — auth flow tests
+│   ├── utils/
+│   │   └── jwt.js                          — JWT sign/verify helpers
+│   ├── app.js                              — Express app setup (middleware, routes)
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── package-lock.json
+│   └── server.js                           — Express entry point, health check on port 4000
+│
+├── docs/
+│   ├── Scaffold_PRD.pdf                    — full product requirements document
+│   ├── co-artist-mode1-plan.md             — Co-Artist backend design and implementation notes
+│   └── project-structure.md               — this file
+│
+├── .env.example                            — environment variable template
+├── docker-compose.yml                      — full stack orchestration
+├── LICENSE                                 — TBD
+└── README.md
 ```
-
-## Root-level directories
-
-- backend-node/: Node.js service for authentication and export-oriented API work.
-- backend-python/: FastAPI service for rooms, canvas persistence, voice, and co-artist support.
-- frontend/: React and Vite client with the drawing canvas and application pages.
-- docs/: planning documents, architecture notes, and project references.
-- docker-compose.yml: local orchestration for the frontend, backend services, and MongoDB.
-- README.md: project guide for contributors.
-- LICENSE: repository license placeholder.
-
-## Frontend application structure
-
-The frontend lives under [frontend](../frontend) and is organized around a React entry point plus a canvas engine.
-
-### Canvas engine architecture
-
-- frontend/src/canvas/: the core drawing experience.
-- frontend/src/canvas/brushes/: brush implementations such as the pressure-sensitive and eraser tools.
-- frontend/src/canvas/components/: canvas surface components.
-- frontend/src/canvas/history/: history helpers for undo and redo state.
-- frontend/src/canvas/shapes/: shape detection, fitting, and shape construction.
-  - frontend/src/canvas/shapes/constants/: shape type definitions.
-  - frontend/src/canvas/shapes/detectors/: one detector per supported shape.
-  - frontend/src/canvas/shapes/fitters/: one fitter per shape plus shared fit helpers.
-  - frontend/src/canvas/shapes/utils/: geometry helpers used by detectors and fitters.
-- frontend/src/canvas/templates/: page template assets for the drawing workflow.
-- frontend/src/canvas/tools/: canvas tool definitions and related modules.
-
-### Pages, components, and UI layers
-
-- frontend/src/pages/: top-level application pages such as Auth, Dashboard, Export, Landing, Room, and Workspace.
-- frontend/src/components/: shared UI components used across the application.
-- frontend/src/layouts/: layout wrappers for page composition.
-- frontend/src/styles/: global styles, shared variables, and component-level CSS.
-- frontend/src/icons/: icon assets used by the interface.
-- frontend/src/assets/: static images and other assets.
-- frontend/src/constants/: shared constants used by the UI and canvas logic.
-
-### Shared utilities and state
-
-- frontend/src/context/: React context providers such as the layers context.
-- frontend/src/hooks/: reusable hooks.
-- frontend/src/services/: client-side service helpers and API wrappers.
-- frontend/src/socket/: Socket.IO client configuration.
-- frontend/src/utils/: shared helper utilities used across the app.
-
-## Backend Node structure
-
-The Node service under [backend-node](../backend-node) is focused on authentication and supporting API work.
-
-- backend-node/app.js: entry point for the Node service.
-- backend-node/config/: environment-specific configuration for CORS and database access.
-- backend-node/controllers/: request handlers, including auth actions.
-- backend-node/middleware/: route guards such as authentication middleware.
-- backend-node/models/: data models, including the user model.
-- backend-node/routes/: Express routes for auth and related endpoints.
-- backend-node/services/: service layer for auth and other business logic.
-- backend-node/utils/: helper utilities, including JWT helpers.
-- backend-node/exports/: export-related implementation area.
-- backend-node/test/: tests for the Node service.
-
-## Backend Python structure
-
-The Python service under [backend-python](../backend-python) contains the real-time backend, persistence logic, voice integration, and co-artist services.
-
-- backend-python/app/api/: HTTP-facing API modules for co-artist and voice endpoints.
-- backend-python/app/database/: database connection helpers.
-- backend-python/app/models/: domain models used by the backend.
-- backend-python/app/services/: application services for authentication, canvas state, rooms, skeleton generation, voice, and co-artist workflows.
-- backend-python/app/services/skeleton/: helpers for FK rigging, proportions, silhouette, and volume logic.
-- backend-python/app/sockets/: Socket.IO event handlers for the realtime layer.
-- backend-python/app/utils/: shared helpers for the Python backend.
-- backend-python/tests/: unit and integration tests for the backend services.
-- backend-python/main.py: FastAPI application entry point.
-- backend-python/requirements.txt and backend-python/requirements-dev.txt: Python dependencies.
-
-## Documentation structure
-
-- docs/co-artist-mode1-plan.md: planning notes for the co-artist mode work.
-- docs/project-structure.md: the canonical repository structure reference.
-- docs/Scaffold_PRD.pdf: product requirements and scope reference.
