@@ -1,17 +1,24 @@
-import express from "express";
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createApp } from "./app.js";
+import { connectDB } from "./config/db.js";
 
-const app = express();
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(currentDirectory, "../.env") });
+
 const PORT = process.env.PORT || 4000;
 
-app.use(express.json());
+async function startServer() {
+  await connectDB();
+  const app = createApp();
 
-// Health check so `docker-compose up` gives an obvious "it works" signal.
-// Build auth, JWT, and the export service on top of this file.
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", service: "backend-node" });
-});
+  app.listen(PORT, () => {
+    console.log(`backend-node listening on http://0.0.0.0:${PORT}`);
+  });
+}
 
-// express binds to 0.0.0.0 by default, so the container is reachable from the host
-app.listen(PORT, () => {
-  console.log(`backend-node listening on http://0.0.0.0:${PORT}`);
+startServer().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });

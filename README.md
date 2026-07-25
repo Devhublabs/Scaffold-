@@ -101,7 +101,7 @@ cp .env.example .env
 ### Notes for development
 
 - Each service's source folder is mounted into its container, so saving a file hot-reloads that service (Vite HMR for the frontend, `nodemon` for backend-node, `uvicorn --reload` for backend-python).
-- `backend-node` currently ships a **minimal Express server** exposing only `/health`. Build authentication, JWT, and the export service on top of `backend-node/server.js`.
+- `backend-node` exposes `/health`, `/auth/signup`, `/auth/login`, and the protected `/auth/me` JWT verification endpoint. Export remains to be implemented.
 
 ## Repository Structure
 

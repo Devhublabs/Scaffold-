@@ -27,8 +27,19 @@ def _members_listener(store):
     return _on_user_joined
 
 
+def _join_payload(room, user_id, auth_token):
+    return {
+        "roomId": room,
+        "userId": user_id,
+        "authToken": auth_token(user_id),
+    }
+
+
 @pytest.mark.integration
-async def test_stroke_is_persisted_and_replayed_to_late_joiner(wait_until):
+async def test_stroke_is_persisted_and_replayed_to_late_joiner(
+    wait_until,
+    auth_token,
+):
     room = f"it_persist_{uuid.uuid4().hex[:8]}"
 
     a = socketio.AsyncClient()  # draws the stroke
@@ -47,8 +58,8 @@ async def test_stroke_is_persisted_and_replayed_to_late_joiner(wait_until):
     try:
         await a.connect(SERVER_URL)
         await b.connect(SERVER_URL)
-        await a.emit("join_room_event", {"roomId": room, "userId": "user_A"})
-        await b.emit("join_room_event", {"roomId": room, "userId": "user_B"})
+        await a.emit("join_room_event", _join_payload(room, "user_A", auth_token))
+        await b.emit("join_room_event", _join_payload(room, "user_B", auth_token))
         assert await wait_until(lambda: set(a_members.get("users", [])) == {"user_A", "user_B"})
 
         await a.emit("stroke", {
@@ -74,7 +85,7 @@ async def test_stroke_is_persisted_and_replayed_to_late_joiner(wait_until):
 
     try:
         await c.connect(SERVER_URL)
-        await c.emit("join_room_event", {"roomId": room, "userId": "user_C"})
+        await c.emit("join_room_event", _join_payload(room, "user_C", auth_token))
         assert await wait_until(lambda: "data" in c_state)
     finally:
         await c.disconnect()
@@ -90,7 +101,10 @@ async def test_stroke_is_persisted_and_replayed_to_late_joiner(wait_until):
 
 
 @pytest.mark.integration
-async def test_stroke_is_broadcast_to_others_but_not_sender(wait_until):
+async def test_stroke_is_broadcast_to_others_but_not_sender(
+    wait_until,
+    auth_token,
+):
     room = f"it_stroke_bc_{uuid.uuid4().hex[:8]}"
     a = socketio.AsyncClient()
     b = socketio.AsyncClient()
@@ -112,8 +126,8 @@ async def test_stroke_is_broadcast_to_others_but_not_sender(wait_until):
     try:
         await a.connect(SERVER_URL)
         await b.connect(SERVER_URL)
-        await a.emit("join_room_event", {"roomId": room, "userId": "user_A"})
-        await b.emit("join_room_event", {"roomId": room, "userId": "user_B"})
+        await a.emit("join_room_event", _join_payload(room, "user_A", auth_token))
+        await b.emit("join_room_event", _join_payload(room, "user_B", auth_token))
         assert await wait_until(lambda: set(b_members.get("users", [])) == {"user_A", "user_B"})
 
         await a.emit("stroke", {

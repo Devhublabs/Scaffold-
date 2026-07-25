@@ -4,3 +4,4 @@ python-socketio
 motor
 python-dotenv
 httpx
+PyJWT

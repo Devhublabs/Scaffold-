@@ -5,8 +5,16 @@ services:
       - "8000:8000"
     volumes:
       - ./backend-python:/app
-    env_file:
-      - .env
+    environment:
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/scaffold}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173}
+      - DAILY_API_KEY=${DAILY_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
+    depends_on:
+      mongo:
+        condition: service_healthy
 
   backend-node:
     build: ./backend-node
@@ -16,11 +24,13 @@ services:
       - PORT=4000
       - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/scaffold}
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173}
     volumes:
       - ./backend-node:/app
       - /app/node_modules
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -39,6 +49,12 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
 
 volumes:
   mongo-data:
