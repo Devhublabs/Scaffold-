@@ -13,6 +13,7 @@
 ├── backend-python
 │   ├── app
 │   │   ├── api
+│   │   │   ├── co_artist.py
 │   │   │   ├── __init__.py
 │   │   │   ├── __pycache__
 │   │   │   │   ├── __init__.cpython-312.pyc
@@ -27,6 +28,7 @@
 │   │   ├── models
 │   │   ├── services
 │   │   │   ├── canvas_service.py
+│   │   │   ├── co_artist_service.py
 │   │   │   ├── __init__.py
 │   │   │   ├── __pycache__
 │   │   │   │   ├── canvas_service.cpython-312.pyc
@@ -34,6 +36,14 @@
 │   │   │   │   ├── room_service.cpython-312.pyc
 │   │   │   │   └── voice_service.cpython-312.pyc
 │   │   │   ├── room_service.py
+│   │   │   ├── skeleton
+│   │   │   │   ├── fk.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── proportions_resolver.py
+│   │   │   │   ├── rig.py
+│   │   │   │   ├── silhouette.py
+│   │   │   │   └── volumes.py
+│   │   │   ├── skeleton_service.py
 │   │   │   └── voice_service.py
 │   │   ├── sockets
 │   │   │   ├── events.py
@@ -42,6 +52,7 @@
 │   │   │       ├── events.cpython-312.pyc
 │   │   │       └── __init__.cpython-312.pyc
 │   │   └── utils
+│   ├── conftest.py
 │   ├── Dockerfile
 │   ├── main.py
 │   ├── pytest.ini
@@ -55,8 +66,15 @@
 │       │   └── test_sockets.cpython-312.pyc
 │       ├── test_canvas_persistence.py
 │       ├── test_canvas_service.py
+│       ├── test_co_artist_service.py
+│       ├── test_co_artist_skeleton_api.py
+│       ├── test_fk.py
+│       ├── test_proportions_resolver.py
 │       ├── test_room_service.py
-│       └── test_sockets.py
+│       ├── test_silhouette.py
+│       ├── test_skeleton_service.py
+│       ├── test_sockets.py
+│       └── test_volumes.py
 ├── docker-compose.yml
 ├── docs
 │   ├── co-artist-mode1-plan.md
@@ -84,6 +102,8 @@
 │   │   │   │   └── Canvas.jsx
 │   │   │   ├── history
 │   │   │   ├── shapes
+│   │   │   │   ├── constants
+│   │   │   │   │   └── ShapeType.js
 │   │   │   │   ├── detectors
 │   │   │   │   │   ├── arrowDetector.js
 │   │   │   │   │   ├── circleDetector.js
@@ -101,7 +121,9 @@
 │   │   │   │   │   ├── fitPolygon.js
 │   │   │   │   │   ├── fitRectangle.js
 │   │   │   │   │   ├── fitSpeechBubble.js
-│   │   │   │   │   └── fitStar.js
+│   │   │   │   │   ├── fitStar.js
+│   │   │   │   │   ├── fitters.test.js
+│   │   │   │   │   └── fitUtils.js
 │   │   │   │   ├── ShapeFactory.js
 │   │   │   │   ├── snapToShape.js
 │   │   │   │   └── utils
@@ -136,10 +158,9 @@
 │   │   │   ├── globals.css
 │   │   │   └── variables.css
 │   │   └── utils
-│   ├── structure.txt
 │   └── vite.config.js
 ├── LICENSE
 ├── README.md
 └── structure.txt
 
-58 directories, 85 files
+60 directories, 104 files

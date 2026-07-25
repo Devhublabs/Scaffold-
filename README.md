@@ -1,91 +1,186 @@
-# README.md
-
 # Scaffold
 
-A real-time collaborative drawing platform for manga, comic, and digital artists.
+> **Manga, together.**
 
-Scaffold is a web application that allows multiple artists to draw on the same canvas simultaneously while communicating through voice chat. Rather than generating artwork with AI, Scaffold focuses on speeding up the creative process by providing collaborative tools, geometry-based shape cleanup, and artist-friendly workflows that preserve each user's unique style.
+Scaffold is a real-time collaborative drawing platform for manga, comic, and
+digital artists. It is designed to speed up technical groundwork such as
+construction guides, proportions, and panel layout while leaving the final
+linework and artistic decisions entirely to the artist.
 
-Built by DevHub Labs.
+The project is under active development by DevHub Labs.
 
-## Features
+---
 
-### Drawing
-- Mouse, touch and stylus support
-- Pressure-sensitive drawing (where supported)
-- Multiple brushes
-- Eraser
-- Layers
-- Undo / Redo
-- Select & Scale
-- Manga page templates
+## Vision
+
+Scaffold aims to become the collaborative workspace for comic and manga artists
+— combining real-time collaboration, deterministic artistic assistance, and
+professional drawing tools while ensuring artists remain in complete creative
+control. Nothing in Scaffold generates finished art on a user's behalf. The
+tool builds the scaffold; the artist builds the art.
+
+---
+
+## MVP Progress
+
+### Core Canvas
+- [x] Drawing (mouse, touch, stylus)
+- [x] Pressure-sensitive brushes (pencil, pen)
+- [x] Eraser brush
+- [x] Layers
+- [x] Undo / Redo
+- [ ] Select & Scale
+- [ ] Manga page templates
 
 ### Collaboration
-- Shared drawing rooms
-- Live cursor tracking
-- Real-time stroke synchronization
-- Voice communication
-- Auto-save
+- [x] Socket.IO room membership
+- [x] Live cursors
+- [x] Stroke synchronisation
+- [x] Stroke persistence and replay
+- [ ] Dynamic room creation and room links
+### Notes for development
 
-### Snap-to-Shape
-Automatically cleans rough:
-- Circles
-- Ellipses
-- Lines
-- Rectangles
+- Each service's source folder is mounted into its container, so saving a file hot-reloads that service (Vite HMR for the frontend, `nodemon` for backend-node, `uvicorn --reload` for backend-python).
+- `backend-node` exposes `/health`, `/auth/signup`, `/auth/login`, and the protected `/auth/me` JWT verification endpoint. Export remains to be implemented.
 
-using geometry fitting instead of AI.
+## Repository Structure
 
-## Tech Stack
-
-**Frontend**
-- React
-- Fabric.js
-- Pointer Events API
-- Socket.IO Client
-
-**Backend**
-- Python
-- FastAPI
-- python-socketio
-- Node.js
-- Express.js
-- JWT Authentication
-
-**Database**
-- MongoDB
-
-**Voice**
-- WebRTC (Daily.co / Agora)
-
-## Getting Started
-
-The entire stack runs locally with Docker, so you don't need Node, Python, or MongoDB installed on your machine — only [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-
-### Run the whole project
-
-From the repository root:
-
-```bash
-docker-compose up --build
+```
+Scaffold/
+│
+├── frontend/
+│   ├── public/
+  ├── src/
+  │   ├── assets/
+  │   ├── canvas/
+  │   ├── components/
+  │   ├── pages/
+  │   ├── layouts/
+  │   ├── hooks/
+  │   ├── context/
+  │   ├── services/
+  │   ├── socket/
+  │   ├── utils/
+  │   ├── styles/
+  │   ├── constants/
+  │   └── icons/
+  ├── index.html
+  ├── package.json
+  ├── package-lock.json
+  ├── vite.config.js
+  ├── eslint.config.js
+  └── .gitignore
+│
+├── backend-python/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── sockets/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── database/
+│   │   └── utils/
+  ├── tests/
+  └── requirements.txt
+│
+├── backend-node/
+│   ├── routes/
+│   ├── middleware/
+│   ├── controllers/
+│   ├── services/
+│   ├── utils/
+  ├── config/
+  ├── exports/
+  ├── package.json
+  └── .gitignore
+│
+├── docs/
+├── .github/
+│   └── workflows/
+│
+├── README.md
+├── .gitignore
+└── LICENSE
 ```
 
-This builds and starts every service. The first build takes a few minutes; later runs are cached and much faster. Press `Ctrl+C` to stop, or start in the background with `docker-compose up --build -d` (then `docker-compose down` to stop).
+Run in the background:
+        │
+        ▼
+Fitter — computes best-fit geometry from stroke points
+        │
+        ▼
+ShapeFactory — creates a clean Fabric object from fitted parameters
+        │
+        ▼
+Original freehand path removed, clean shape added to canvas
+        │
+        ▼
+Clean shape recorded in layer state and emitted over Socket.IO
+```
 
-### Services & ports
+---
 
-| Service          | URL                         | Port    | Stack                          |
-| ---------------- | --------------------------- | ------- | ------------------------------ |
-| frontend         | http://localhost:5173       | `5173`  | React 19 + Vite                |
-| backend-python   | http://localhost:8000       | `8000`  | FastAPI + Socket.IO            |
-| backend-node     | http://localhost:4000       | `4000`  | Express (auth, JWT, export)    |
-| mongo            | mongodb://localhost:27017   | `27017` | MongoDB 7                      |
+## Snap-to-Shape
 
-Quick sanity check that the backends are up: open <http://localhost:8000> (FastAPI) and <http://localhost:4000/health> (Express).
+Snap-to-Shape is one of Scaffold's flagship features. When a user finishes a
+stroke, the pipeline detects whether it resembles a known geometric shape and,
+if confident enough, replaces the freehand stroke with a mathematically clean
+version of the same shape — preserving the artist's proportions and intent
+without generating anything new.
 
-### Environment variables
+### Shapes supported
 
-**No `.env` file is required to boot** — development defaults are baked into `docker-compose.yml`. To override them (for example, to set a real `JWT_SECRET`), copy the example file at the repo root and edit it:
+Line, rectangle, circle, ellipse, polygon, arrow, speech bubble, star.
+
+### Detection order
+
+Detectors run in priority order — line first (simplest to detect), then
+rectangle, circle, ellipse, then the compound shapes. The first detector that
+exceeds the confidence threshold wins. If no detector is confident enough, the
+original freehand stroke is kept untouched.
+
+### Toggle
+
+Snap-to-Shape is toggleable per user. Artists who prefer pure freehand can
+disable it without affecting other collaborators in the same room.
+
+### Module locations
+
+```
+frontend/src/canvas/shapes/
+├── constants/ShapeType.js       — shape type enum
+├── detectors/                   — one detector per shape
+├── fitters/                     — one fitter per shape + shared fitUtils.js
+├── ShapeFactory.js              — converts fitted geometry into Fabric objects
+└── snapToShape.js               — orchestrates the full pipeline
+```
+
+### Current status
+
+Detectors, fitters, ShapeFactory, and the snapToShape orchestrator all exist.
+Canvas integration (wiring `path:created` in Canvas.jsx to call snapToShape,
+and adding the toggle to the toolbar) is the remaining step.
+
+---
+
+## Architecture
+
+| Component | Responsibility | Technology |
+| --- | --- | --- |
+| `frontend` | Canvas UI, drawing tools, local history, real-time client | React, Vite, Fabric.js, Socket.IO Client |
+| `backend-python` | Real-time rooms, stroke persistence, voice API, Co-Artist services | FastAPI, python-socketio, Motor |
+| `backend-node` | Authentication and export services | Node.js, Express |
+| `mongo` | Persistent room stroke storage | MongoDB 7 |
+
+---
+
+## Quick Start With Docker
+
+### Prerequisites
+
+- Docker Engine or Docker Desktop
+- Docker Compose v2 (`docker compose`)
+
+### 1. Create the environment file
 
 ```bash
 cp .env.example .env
@@ -101,7 +196,7 @@ cp .env.example .env
 ### Notes for development
 
 - Each service's source folder is mounted into its container, so saving a file hot-reloads that service (Vite HMR for the frontend, `nodemon` for backend-node, `uvicorn --reload` for backend-python).
-- `backend-node` exposes `/health`, `/auth/signup`, `/auth/login`, and the protected `/auth/me` JWT verification endpoint. Export remains to be implemented.
+- `backend-node` currently ships a **minimal Express server** exposing only `/health`. Build authentication, JWT, and the export service on top of `backend-node/server.js`.
 
 ## Repository Structure
 
@@ -164,179 +259,115 @@ Scaffold/
 
 ## Team Responsibilities
 
-### Obi
-**Canvas Engine & Real-time Client**
+### Obi — Canvas Engine and Real-Time Client
 
-Works inside:
-- `frontend/src/canvas/`
-- `frontend/src/socket/`
-- `frontend/src/components/`
+- Pointer Events input (mouse, touch, stylus, pressure)
+- PressureBrush and EraserBrush
+- Layer management and LayersContext
+- Undo and redo
+- Snap-to-shape canvas integration
+- Select and scale
+- Socket.IO client (join, cursor emit/receive, stroke emit/receive)
 
-Responsibilities:
-- Pointer Events
-- Pressure-sensitive drawing
-- Brushes
-- Layers
-- Undo / Redo
-- Select & Scale
-- Snap-to-Shape
-- Live cursor rendering
-- Socket.IO client integration
+### Ronald — Python Real-Time Backend
 
-### Ronald
-**Backend Real-time Core**
+- Room management and Socket.IO events
+- Stroke persistence and canvas replay
+- Voice backend (Daily.co)
+- Co-Artist backend (Groq, skeleton, construction guides, contours)
 
-Works inside:
-- `backend-python/`
+### Testimony — Node Backend
 
-Responsibilities:
-- Room management
-- Real-time synchronization
-- Cursor broadcasting
-- Stroke broadcasting
-- Auto-save
-- Voice backend
-- Co-Artist backend
+- Authentication and JWT security
+- Export service (PNG / PDF)
+- Backend integration and glue layer
+- Build-in-public content pipeline
 
-### Testimony
-**Node Backend**
+### Davis — Frontend UI
 
-Works inside:
-- `backend-node/`
+- All ten frontend pages
+- Shared application styling
 
-Responsibilities:
-- Authentication
-- JWT security
-- Export service
-- Backend integration
+---
 
-### Davis
-**Frontend UI**
+## Testing and Quality Checks
 
-Works inside:
-- `frontend/src/pages/`
-- `frontend/src/components/`
-- `frontend/src/styles/`
+### Frontend
 
-Responsibilities:
-- Landing
-- Dashboard
-- Export
+```bash
+cd frontend
+npm run lint
+npm run build
+```
 
-### sekibo
-**Canvas UI & Templates**
+### Python unit tests
 
-Works inside:
-- `frontend/src/pages/`
-- `frontend/src/components/`
-- `frontend/src/styles/`
-- `frontend/src/canvas/`
+```bash
+cd backend-python
+python -m pytest -m "not integration"
+```
 
-Responsibilities:
-- Auth
-- Room Join
-- Manga page templates
-- Canvas workspace UI
-- Toolbar
-- Layers panel
-- Collaborator panel
+### Python integration tests
 
-## Creating Files
+Start the Docker stack first, then:
 
-This repository intentionally contains folders only for most feature areas.
+```bash
+cd backend-python
+python -m pytest -m integration
+```
 
-Each contributor is responsible for creating their own files inside the appropriate folders.
+Integration tests connect to http://localhost:8000 and require MongoDB.
 
-For example:
-- Pages go inside `frontend/src/pages`
-- Shared UI goes inside `frontend/src/components`
-- Canvas logic goes inside `frontend/src/canvas`
-- Socket code goes inside `frontend/src/socket`
-- Styles go inside `frontend/src/styles`
+---
 
-Do not create files outside your assigned area without discussing it with the team.
+## Repository Structure
 
-## Development Workflow
+See `docs/project-structure.md` for the full directory tree.
 
-1. Pull the latest changes.
-2. Create a feature branch.
-3. Build your assigned feature.
-4. Commit with clear commit messages.
-5. Push your branch.
-6. Open a Pull Request.
-7. After review, merge into main.
+Top-level layout:
+
+```
+scaffold/
+├── frontend/          — React app (canvas, socket, pages, styles)
+├── backend-python/    — FastAPI real-time server and Co-Artist services
+├── backend-node/      — Express auth and export service
+├── docs/              — PRD, architecture, and planning documents
+├── .env.example       — environment variable template
+└── docker-compose.yml — full stack orchestration
+```
+
+---
+
+## Known Limitations
+
+- Authentication, JWT validation, and export are not yet implemented
+- The `authToken` sent by the development client is not validated
+- The Python Socket.IO server currently allows all CORS origins
+- The eraser draws with the canvas background color; it is not a destructive
+  Fabric object eraser
+- Undo and redo are local canvas operations and are not synchronised as
+  delete or restore events across collaborators
+- Co-Artist guides are broadcast but are not persisted in MongoDB
+- The frontend currently joins a fixed development room (`abc123`) with a
+  temporary session-storage user ID; there is no dynamic room creation or
+  join UI yet
+- The frontend production build reports a bundle-size warning above 500 kB
+- `frontend/src/context/layers-context.js` is a stale duplicate of
+  `LayersContext.jsx` and should be deleted
+
+---
 
 ## Documentation
 
-The complete Product Requirements Document (PRD), design system, architecture, and API contracts are available inside the `docs` folder.
+- `docs/Scaffold_PRD.pdf` — full product requirements, design system, and
+  planned v1 scope
+- `docs/co-artist-mode1-plan.md` — completed backend skeleton and
+  construction-guide pipeline documentation
+- `docs/project-structure.md` — full directory tree (see separate file)
 
-## Project Status
-
-🚧 Active Development
-
-Current milestone:
-- ✅ React + Fabric.js canvas
-- ✅ Basic drawing engine
-- ✅ Pointer Events integration
-- ✅ Pressure-sensitive brush
-- ✅ Eraser brush
-- ✅ Logical layers v1
-- ✅ Global undo / redo v1
-- 🚧 Collaboration
-- ⏳ Voice
-- ⏳ Snap-to-Shape
-
-### Frontend Progress Update - July 13, 2026
-
-Obi's frontend canvas work now includes:
-
-- Pressure-sensitive pencil and pen brushes using Fabric.js Pointer Events.
-- Eraser brush that draws with the current canvas background color.
-- Brush switching between pencil, pen, and eraser.
-- Logical layer tracking through `LayersContext`.
-- Verified `Sketch` layer object tracking: drawing a stroke adds the Fabric object to the active layer.
-- Basic global undo / redo stack for v1.
-- Singleton Socket.IO client in `frontend/src/socket/socket.js`.
-- Canvas emits `join_room_event` to the Python backend when the canvas loads.
-- Canvas emits throttled `cursor` events during pointer movement.
-- Canvas emits `stroke` events after Fabric fires `path:created`.
-- Canvas listens for `user_joined`, `cursor`, `stroke`, and `canvas_state`.
-- Incoming remote cursors render as labeled cursor dots.
-- Incoming remote strokes replay onto the Fabric canvas.
-
-Current frontend development placeholders:
-
-- `roomId` is hardcoded as `abc123`.
-- `userId` is generated in `sessionStorage` as `user_xxxxx`.
-- `authToken` is currently `dev-token`.
-- These should be replaced once the room/auth flow is ready.
-
-Frontend stroke payload:
-
-```js
-{
-  type: "stroke",
-  roomId,
-  userId,
-  points: [[x, y], ...],
-  pressures: [0.4, 0.6, ...],
-  color,
-  width
-}
-```
-
-Backend integration note for Ronald:
-
-- The frontend now sends `pressures` alongside `points`.
-- Ronald should confirm the Python backend stores and broadcasts `pressures` on `stroke` and `canvas_state`.
-- If `pressures` are missing from a remote stroke, the frontend falls back to `0.5` pressure so replay still works.
-
-Verification completed:
-
-- `npm run lint`
-- `npm run build`
-- Browser smoke test: drawing still creates pixels on the canvas with no runtime errors.
+---
 
 ## License
 
-TBD
+The repository license has not been finalized. `LICENSE` currently contains
+`License: TBD`.
