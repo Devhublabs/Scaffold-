@@ -75,6 +75,7 @@ def build_construction_shapes(
     shapes.append(_polyline("jaw-wedge", "head", [
         [head_cx - cheek_w, jaw_top_y],
         [head_cx,           chin_y],
+
         [head_cx + cheek_w, jaw_top_y],
     ]))
 
@@ -110,7 +111,7 @@ def build_construction_shapes(
     shapes += _tube("neck", "neck", chest_pos, neck_pos, neck_pw, neck_dw)
 
     # --- JOINT SPHERES ---
-    joint_sphere_radius = 0.06
+    joint_sphere_radius = 0.085
     sphere_joints = [
         ("l_shoulder", "l_shoulder"), ("r_shoulder", "r_shoulder"),
         ("l_elbow",    "l_elbow"),    ("r_elbow",    "r_elbow"),
@@ -141,6 +142,13 @@ def build_construction_shapes(
                         shoulder, elbow, arm_pw, arm_dw)
         shapes += _tube(f"{side}-forearm", f"{side}_forearm",
                         elbow, wrist, fore_pw, fore_dw)
+        shapes.append(_terminal_wedge(
+            f"{side}-hand", f"{side}_hand",
+            elbow, wrist,
+            length=0.28,
+            width_prox=max(fore_dw, 0.13),
+            width_dist=0.16,
+        ))
 
     # --- LEG TUBES ---
     thigh_pw, thigh_dw = sw.get("thigh", (0.18, 0.13))
@@ -155,6 +163,11 @@ def build_construction_shapes(
                         hip, knee, thigh_pw, thigh_dw)
         shapes += _tube(f"{side}-shin", f"{side}_shin",
                         knee, ankle, shin_pw, shin_dw)
+        shapes.append(_foot_wedge(
+            f"{side}-foot", f"{side}_foot",
+            ankle,
+            side=side,
+        ))
 
     return shapes
 
@@ -246,3 +259,68 @@ def _tube(
     outline    = _polyline(f"{shape_id}-outline", part, [pl, pr, dr, dl, pl])
 
     return [centerline, outline]
+
+
+def _terminal_wedge(
+    shape_id: str,
+    part: str,
+    p_parent: tuple[float, float],
+    p_joint: tuple[float, float],
+    length: float,
+    width_prox: float,
+    width_dist: float,
+) -> dict:
+    """Build a closed hand-like wedge continuing the incoming limb direction."""
+    x0, y0 = p_parent
+    x1, y1 = p_joint
+    dx, dy = x1 - x0, y1 - y0
+    magnitude = math.hypot(dx, dy) or 1e-9
+    tx, ty = dx / magnitude, dy / magnitude
+    nx, ny = -ty, tx
+    x2, y2 = x1 + tx * length, y1 + ty * length
+
+    hp = width_prox / 2
+    hd = width_dist / 2
+    points = [
+        (x1 + nx * hp, y1 + ny * hp),
+        (x1 - nx * hp, y1 - ny * hp),
+        (x2 - nx * hd, y2 - ny * hd),
+        (x2 + tx * 0.08, y2 + ty * 0.08),
+        (x2 + nx * hd, y2 + ny * hd),
+    ]
+    return _closed_polyline(shape_id, part, points)
+
+
+def _foot_wedge(
+    shape_id: str,
+    part: str,
+    ankle: tuple[float, float],
+    side: str,
+) -> dict:
+    """Build a simple front-view foot wedge angled slightly outward."""
+    direction = -1.0 if side == "l" else 1.0
+    x, y = ankle
+    points = [
+        (x - direction * 0.08, y),
+        (x + direction * 0.10, y),
+        (x + direction * 0.34, y + 0.14),
+        (x + direction * 0.06, y + 0.18),
+    ]
+    return _closed_polyline(shape_id, part, points)
+
+
+def _closed_polyline(
+    shape_id: str,
+    part: str,
+    points: list[tuple[float, float]],
+) -> dict:
+    rounded = [[round(x, 4), round(y, 4)] for x, y in points]
+    rounded.append(rounded[0])
+    return {
+        "id": shape_id,
+        "part": part,
+        "role": "construction",
+        "type": "polyline",
+        "closed": True,
+        "points": rounded,
+    }

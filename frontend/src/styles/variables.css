@@ -32,11 +32,9 @@ body {
 
 #root {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   min-height: 100svh;
-  box-sizing: border-box;
-  padding: 0 24px;
 }
 
 /* Keep type light so the artwork stays the focus (weights 500–600 only). */

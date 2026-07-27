@@ -6,8 +6,12 @@ export function LayersProvider({ children }) {
   const [activeLayerId, setActiveLayerId] = useState(null);
 
   const addLayer = useCallback((name) => {
+    const id =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const newLayer = {
-      id: Date.now().toString(),
+      id,
       name,
       visible: true,
       objects: [],

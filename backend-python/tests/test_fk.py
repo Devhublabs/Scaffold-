@@ -125,6 +125,16 @@ class TestAnchorAndOrigin:
             )
 
 
+    def test_rest_pose_has_readable_limb_stance(self):
+        """Neutral limbs should not collapse into four parallel vertical poles."""
+        result = run_fk(JOINTS, SIMPLE_BONE_LENGTHS)
+
+        assert abs(result["l_elbow"][0]) < abs(result["l_shoulder"][0])
+        assert abs(result["r_elbow"][0]) < abs(result["r_shoulder"][0])
+        assert abs(result["l_knee"][0]) > abs(result["l_hip"][0])
+        assert abs(result["r_knee"][0]) > abs(result["r_hip"][0])
+
+
 # ---------------------------------------------------------------------------
 # Angle overrides
 # ---------------------------------------------------------------------------

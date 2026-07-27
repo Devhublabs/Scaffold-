@@ -5,6 +5,8 @@ Run with:
     pytest tests/test_co_artist_skeleton_api.py -v
 """
 import pytest
+import jwt
+from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 from main import app
 
@@ -23,10 +25,32 @@ STANDARD_PROPORTIONS = {
     "torsoLengthCm":    27.0,
 }
 
+
+@pytest.fixture(autouse=True)
+def configure_auth(monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "test-secret")
+
+
+def auth_headers():
+    now = datetime.now(timezone.utc)
+    token = jwt.encode(
+        {
+            "userId": "user_A",
+            "username": "artist",
+            "iat": now,
+            "exp": now + timedelta(hours=1),
+        },
+        "test-secret",
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
 class TestCoArtistSkeletonApi:
     def test_post_skeleton_success(self):
         response = client.post(
             "/api/co-artist/skeleton",
+            headers=auth_headers(),
             json={
                 "proportions": STANDARD_PROPORTIONS,
                 "characterId": "char_99",
@@ -42,6 +66,7 @@ class TestCoArtistSkeletonApi:
     def test_post_skeleton_with_angles_success(self):
         response = client.post(
             "/api/co-artist/skeleton",
+            headers=auth_headers(),
             json={
                 "proportions": STANDARD_PROPORTIONS,
                 "characterId": "char_99",
@@ -55,6 +80,7 @@ class TestCoArtistSkeletonApi:
     def test_post_skeleton_missing_character_id_error(self):
         response = client.post(
             "/api/co-artist/skeleton",
+            headers=auth_headers(),
             json={
                 "proportions": STANDARD_PROPORTIONS,
                 # "characterId" missing
@@ -65,9 +91,21 @@ class TestCoArtistSkeletonApi:
     def test_post_skeleton_missing_proportions_error(self):
         response = client.post(
             "/api/co-artist/skeleton",
+            headers=auth_headers(),
             json={
                 "characterId": "char_99",
                 # "proportions" missing
             }
         )
         assert response.status_code == 422
+
+    def test_post_skeleton_requires_authentication(self):
+        response = client.post(
+            "/api/co-artist/skeleton",
+            json={
+                "proportions": STANDARD_PROPORTIONS,
+                "characterId": "char_99",
+            },
+        )
+
+        assert response.status_code == 401

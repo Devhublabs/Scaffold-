@@ -43,7 +43,15 @@ def build_silhouette_shapes(
     """
     shapes: list[dict] = []
     pos = joint_positions
-    sw  = segment_widths
+    sw = segment_widths
+
+    shapes.append(_torso_contour(pos, sw))
+
+    neck_pw, neck_dw = sw.get("neck", (0.24, 0.20))
+    shapes.append(_segment_contour(
+        "neck-contour", "neck",
+        pos["chest"], pos["neck"], neck_pw, neck_dw,
+    ))
 
     # Torso — ribcage and pelvis are already ellipses in construction shapes;
     # for contour we emit a simple bounding-box-style closed polyline.
@@ -73,6 +81,13 @@ def build_silhouette_shapes(
             f"{side}-forearm-contour", f"{side}_forearm",
             elbow, wrist, fore_pw, fore_dw,
         ))
+        shapes.append(_terminal_contour(
+            f"{side}-hand-contour", f"{side}_hand",
+            elbow, wrist,
+            length=0.28,
+            width_prox=max(fore_dw, 0.13),
+            width_dist=0.16,
+        ))
 
     # Legs
     thigh_pw, thigh_dw = sw.get("thigh", (0.18, 0.13))
@@ -91,6 +106,11 @@ def build_silhouette_shapes(
             f"{side}-shin-contour", f"{side}_shin",
             knee, ankle, shin_pw, shin_dw,
         ))
+        shapes.append(_foot_contour(
+            f"{side}-foot-contour", f"{side}_foot",
+            ankle,
+            side=side,
+        ))
 
     return shapes
 
@@ -98,6 +118,45 @@ def build_silhouette_shapes(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+def _torso_contour(
+    positions: dict[str, tuple[float, float]],
+    segment_widths: dict[str, tuple[float, float]],
+) -> dict:
+    """Build a readable front-view torso bean around ribcage and pelvis."""
+    chest_x, chest_y = positions["chest"]
+    pelvis_x, pelvis_y = positions["pelvis"]
+    rib_rx, _ = segment_widths.get("ribcage", (0.9, 0.7))
+    pelvis_rx, pelvis_ry = segment_widths.get("pelvis", (0.7, 0.4))
+
+    rib_y = chest_y + 0.4
+    pelvis_center_y = pelvis_y - 0.2
+    waist_y = (rib_y + pelvis_center_y) / 2
+    waist_rx = min(rib_rx, pelvis_rx) * 0.62
+    shoulder_left = positions["l_shoulder"]
+    shoulder_right = positions["r_shoulder"]
+
+    points = [
+        [shoulder_left[0], chest_y + 0.05],
+        [chest_x - rib_rx, rib_y],
+        [chest_x - waist_rx, waist_y],
+        [pelvis_x - pelvis_rx, pelvis_center_y],
+        [pelvis_x - pelvis_rx * 0.72, pelvis_center_y + pelvis_ry],
+        [pelvis_x + pelvis_rx * 0.72, pelvis_center_y + pelvis_ry],
+        [pelvis_x + pelvis_rx, pelvis_center_y],
+        [chest_x + waist_rx, waist_y],
+        [chest_x + rib_rx, rib_y],
+        [shoulder_right[0], chest_y + 0.05],
+    ]
+    return {
+        "id": "torso-contour",
+        "part": "torso",
+        "role": "contour",
+        "type": "polyline",
+        "closed": True,
+        "points": [[round(x, 4), round(y, 4)] for x, y in points],
+    }
+
 
 def _segment_contour(
     shape_id: str,
@@ -149,6 +208,67 @@ def _segment_contour(
         "type":   "polyline",
         "closed": True,
         "points": [[round(x, 4), round(y, 4)] for x, y in outline_pts],
+    }
+
+
+def _terminal_contour(
+    shape_id: str,
+    part: str,
+    p_parent: tuple[float, float],
+    p_joint: tuple[float, float],
+    length: float,
+    width_prox: float,
+    width_dist: float,
+) -> dict:
+    """Build a hand-like contour continuing the incoming limb direction."""
+    x0, y0 = p_parent
+    x1, y1 = p_joint
+    dx, dy = x1 - x0, y1 - y0
+    magnitude = math.hypot(dx, dy) or 1e-9
+    tx, ty = dx / magnitude, dy / magnitude
+    nx, ny = -ty, tx
+    x2, y2 = x1 + tx * length, y1 + ty * length
+    hp = width_prox / 2
+    hd = width_dist / 2
+    points = [
+        [x1 + nx * hp, y1 + ny * hp],
+        [x1 - nx * hp, y1 - ny * hp],
+        [x2 - nx * hd, y2 - ny * hd],
+        [x2 + tx * 0.08, y2 + ty * 0.08],
+        [x2 + nx * hd, y2 + ny * hd],
+    ]
+    return {
+        "id": shape_id,
+        "part": part,
+        "role": "contour",
+        "type": "polyline",
+        "closed": True,
+        "points": [[round(x, 4), round(y, 4)] for x, y in points],
+    }
+
+
+def _foot_contour(
+    shape_id: str,
+    part: str,
+    ankle: tuple[float, float],
+    side: str,
+) -> dict:
+    """Build a simple front-view foot contour angled slightly outward."""
+    direction = -1.0 if side == "l" else 1.0
+    x, y = ankle
+    points = [
+        [x - direction * 0.08, y],
+        [x + direction * 0.10, y],
+        [x + direction * 0.34, y + 0.14],
+        [x + direction * 0.06, y + 0.18],
+    ]
+    return {
+        "id": shape_id,
+        "part": part,
+        "role": "contour",
+        "type": "polyline",
+        "closed": True,
+        "points": [[round(px, 4), round(py, 4)] for px, py in points],
     }
 
 

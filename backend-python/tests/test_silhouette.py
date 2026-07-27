@@ -55,6 +55,11 @@ class TestSilhouetteShapes:
         head = shapes_by_id["head-outline"]
         assert len(head["points"]) == 24  # 24 steps
 
+    def test_torso_and_neck_contours_present(self, shapes_by_id):
+        assert "torso-contour" in shapes_by_id
+        assert "neck-contour" in shapes_by_id
+        assert len(shapes_by_id["torso-contour"]["points"]) >= 8
+
     def test_arm_contours_present(self, shapes_by_id):
         for side in ("l", "r"):
             assert f"{side}-upper-arm-contour" in shapes_by_id
@@ -70,3 +75,8 @@ class TestSilhouetteShapes:
             assert f"{side}-shin-contour" in shapes_by_id
             assert len(shapes_by_id[f"{side}-thigh-contour"]["points"]) == 4
             assert len(shapes_by_id[f"{side}-shin-contour"]["points"]) == 4
+
+    def test_hand_and_foot_contours_present(self, shapes_by_id):
+        for side in ("l", "r"):
+            assert f"{side}-hand-contour" in shapes_by_id
+            assert f"{side}-foot-contour" in shapes_by_id

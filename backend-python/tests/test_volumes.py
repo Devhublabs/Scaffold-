@@ -169,6 +169,13 @@ class TestJointSpheres:
 # Limb tubes
 # ---------------------------------------------------------------------------
 
+class TestJointVisibility:
+    def test_joint_spheres_are_large_enough_to_read(self, shapes_by_id):
+        for side in ("l", "r"):
+            for joint in ("shoulder", "elbow", "wrist", "hip", "knee", "ankle"):
+                assert shapes_by_id[f"joint-{side}_{joint}"]["rx"] >= 0.08
+
+
 class TestLimbTubes:
     TUBE_PAIRS = [
         ("l-upper-arm", "r-upper-arm"),
@@ -222,3 +229,17 @@ class TestLegTubes:
         pelvis_cy = shapes_by_id["pelvis"]["cy"]
         hip_y     = shapes_by_id["l-thigh-centerline"]["y1"]
         assert hip_y > pelvis_cy - 0.5, "Thigh should start near pelvis level"
+
+
+class TestTerminalGuides:
+    def test_hand_wedges_present(self, shapes_by_id):
+        for side in ("l", "r"):
+            shape = shapes_by_id[f"{side}-hand"]
+            assert shape["closed"] is True
+            assert len(shape["points"]) >= 5
+
+    def test_foot_wedges_present(self, shapes_by_id):
+        for side in ("l", "r"):
+            shape = shapes_by_id[f"{side}-foot"]
+            assert shape["closed"] is True
+            assert len(shape["points"]) >= 4

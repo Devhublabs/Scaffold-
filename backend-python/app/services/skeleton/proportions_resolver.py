@@ -1,136 +1,169 @@
-"""
-proportions_resolver.py — Converts a proportions dict into bone lengths and
-segment widths, all in head-units (1 unit = 1 head height).
+"""Resolve character proportions into deterministic head-unit rig values.
 
-Proportions schema
-------------------
-The proportions dict is produced by extract_proportions() (co_artist_service.py,
-Groq-backed). The resolver is intentionally lenient: every field has a sensible
-anatomical default so the skeleton never crashes on a partial schema.
-
-Expected keys (all values in cm; resolver converts to head-units internally):
-    headHeightCm        float  – vertical height of the head
-    totalHeightCm       float  – crown to sole; used to derive leg length
-    shoulderWidthCm     float  – tip-to-tip shoulder width
-    chestWidthCm        float  – widest point of the ribcage
-    waistWidthCm        float  – narrowest torso width
-    hipWidthCm          float  – widest point of the pelvis
-    upperArmLengthCm    float  – shoulder to elbow
-    forearmLengthCm     float  – elbow to wrist
-    thighLengthCm       float  – hip to knee
-    shinLengthCm        float  – knee to ankle
-    neckLengthCm        float  – base of skull to top of chest
-    torsoLengthCm       float  – top of chest to top of pelvis
-
-All keys are optional — defaults produce a neutral ~7-head adult figure.
-
-Returns
--------
-bone_lengths : dict[str, float]
-    Maps bone_length_field names (from rig.py) to lengths in head-units.
-    Keys: head_height, neck_length, chest_to_neck, pelvis_to_chest,
-          upper_arm_length, forearm_length, thigh_length, shin_length.
-
-segment_widths : dict[str, tuple[float, float]]
-    Maps part names to (proximal_width, distal_width) in head-units.
-    Tapered tubes are drawn fat-to-thin along the bone direction.
-    Keys: ribcage, pelvis, upper_arm_l, upper_arm_r, forearm_l, forearm_r,
-          thigh_l, thigh_r, shin_l, shin_r, neck.
+The Groq contract uses head-unit fields such as ``armLengthInHeads``. Older
+callers and fixtures use centimeter measurements. This module accepts both and
+prefers direct head-unit values when they are available.
 """
 
 from __future__ import annotations
 
-# ---------------------------------------------------------------------------
-# Anatomical defaults — a neutral 7-head adult figure (head-units)
-# ---------------------------------------------------------------------------
+
 _DEFAULTS = {
-    # bone lengths
-    "head_height":       1.00,
-    "neck_length":       0.30,
-    "chest_to_neck":     0.20,   # short segment from chest joint to neck base
-    "pelvis_to_chest":   1.10,   # spine length (pelvis to chest)
-    "upper_arm_length":  1.00,
-    "forearm_length":    0.90,
-    "thigh_length":      1.50,
-    "shin_length":       1.40,
-    # segment widths (proximal, distal) — all in head-units
-    "ribcage_width":     0.90,   # ellipse rx (half-width)
-    "pelvis_width":      0.70,
-    "upper_arm_w_prox":  0.14,
-    "upper_arm_w_dist":  0.10,
-    "forearm_w_prox":    0.10,
-    "forearm_w_dist":    0.07,
-    "thigh_w_prox":      0.18,
-    "thigh_w_dist":      0.13,
-    "shin_w_prox":       0.13,
-    "shin_w_dist":       0.08,
-    "neck_w_prox":       0.12,
-    "neck_w_dist":       0.10,
+    "head_height": 1.00,
+    "neck_length": 0.30,
+    "chest_to_neck": 0.20,
+    "pelvis_to_chest": 1.10,
+    "upper_arm_length": 1.00,
+    "forearm_length": 0.90,
+    "thigh_length": 1.50,
+    "shin_length": 1.40,
+    "ribcage_width": 0.90,
+    "pelvis_width": 0.70,
+    "upper_arm_w_prox": 0.26,
+    "upper_arm_w_dist": 0.19,
+    "forearm_w_prox": 0.20,
+    "forearm_w_dist": 0.13,
+    "thigh_w_prox": 0.38,
+    "thigh_w_dist": 0.27,
+    "shin_w_prox": 0.28,
+    "shin_w_dist": 0.17,
+    "neck_w_prox": 0.24,
+    "neck_w_dist": 0.20,
 }
 
 
-def resolve(proportions: dict) -> tuple[dict[str, float], dict[str, tuple[float, float]]]:
-    """
-    Convert a proportions dict (cm values) to bone_lengths and segment_widths
-    (head-units).  Every field falls back to the neutral-figure defaults so the
-    skeleton never errors on a partial or empty dict.
+def _positive_float(value) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number > 0 else None
 
-    Parameters
-    ----------
-    proportions : dict
-        As produced by extract_proportions().  May be partial.
 
-    Returns
-    -------
-    bone_lengths     : dict[str, float]
-    segment_widths   : dict[str, tuple[float, float]]
-    """
-    p = proportions  # alias for brevity
+def _split_total(
+    total: float | None,
+    first_default: float,
+    second_default: float,
+) -> tuple[float, float]:
+    if total is None:
+        return first_default, second_default
+    first_ratio = first_default / (first_default + second_default)
+    return total * first_ratio, total * (1.0 - first_ratio)
 
-    head_cm = float(p.get("headHeightCm", 0.0))
 
-    def hu(cm_key: str, fallback_hu: float) -> float:
-        """Convert a cm value from proportions to head-units.
-        Falls back to fallback_hu if the key is missing or head_cm is 0."""
-        if head_cm <= 0:
-            return fallback_hu
-        raw = p.get(cm_key)
-        if raw is None:
-            return fallback_hu
-        return float(raw) / head_cm
+def resolve(
+    proportions: dict,
+) -> tuple[dict[str, float], dict[str, tuple[float, float]]]:
+    """Convert a partial proportions dictionary to head-unit rig values."""
+    if not isinstance(proportions, dict):
+        raise TypeError("proportions must be a dictionary")
 
-    # --- Shoulder half-width (used to place l/r shoulder joints) ---
-    shoulder_hw = hu("shoulderWidthCm", _DEFAULTS["ribcage_width"] * 2) / 2.0
-    ribcage_hw  = hu("chestWidthCm",    _DEFAULTS["ribcage_width"] * 2) / 2.0
-    pelvis_hw   = hu("hipWidthCm",      _DEFAULTS["pelvis_width"] * 2)  / 2.0
+    head_cm = _positive_float(proportions.get("headHeightCm"))
 
-    # --- Bone lengths ---
+    def from_cm(cm_key: str) -> float | None:
+        raw = _positive_float(proportions.get(cm_key))
+        if head_cm is None or raw is None:
+            return None
+        return raw / head_cm
+
+    def head_units(
+        heads_key: str,
+        cm_key: str,
+        fallback_hu: float,
+    ) -> float:
+        direct = _positive_float(proportions.get(heads_key))
+        if direct is not None:
+            return direct
+        converted = from_cm(cm_key)
+        return converted if converted is not None else fallback_hu
+
+    shoulder_width = head_units(
+        "shoulderWidthInHeads",
+        "shoulderWidthCm",
+        _DEFAULTS["ribcage_width"] * 2,
+    )
+    chest_width = head_units(
+        "chestWidthInHeads",
+        "chestWidthCm",
+        shoulder_width,
+    )
+    hip_width = head_units(
+        "hipWidthInHeads",
+        "hipWidthCm",
+        _DEFAULTS["pelvis_width"] * 2,
+    )
+
+    upper_arm_length = from_cm("upperArmLengthCm")
+    forearm_length = from_cm("forearmLengthCm")
+    if upper_arm_length is None and forearm_length is None:
+        upper_arm_length, forearm_length = _split_total(
+            _positive_float(proportions.get("armLengthInHeads")),
+            _DEFAULTS["upper_arm_length"],
+            _DEFAULTS["forearm_length"],
+        )
+    else:
+        upper_arm_length = upper_arm_length or _DEFAULTS["upper_arm_length"]
+        forearm_length = forearm_length or _DEFAULTS["forearm_length"]
+
+    thigh_length = from_cm("thighLengthCm")
+    shin_length = from_cm("shinLengthCm")
+    if thigh_length is None and shin_length is None:
+        leg_length = _positive_float(proportions.get("legLengthInHeads"))
+        if leg_length is None:
+            body_height = _positive_float(proportions.get("bodyHeightInHeads"))
+            leg_ratio = _positive_float(proportions.get("legLengthRatio"))
+            if body_height is not None and leg_ratio is not None:
+                leg_length = body_height * leg_ratio
+        thigh_length, shin_length = _split_total(
+            leg_length,
+            _DEFAULTS["thigh_length"],
+            _DEFAULTS["shin_length"],
+        )
+    else:
+        thigh_length = thigh_length or _DEFAULTS["thigh_length"]
+        shin_length = shin_length or _DEFAULTS["shin_length"]
+
+    shoulder_hw = shoulder_width / 2.0
+    ribcage_hw = chest_width / 2.0
+    pelvis_hw = hip_width / 2.0
+
     bone_lengths: dict[str, float] = {
-        "head_height":     1.0,   # by definition — origin is crown, head is 1 hu tall
-        "neck_length":     hu("neckLengthCm",     _DEFAULTS["neck_length"]),
-        "chest_to_neck":   _DEFAULTS["chest_to_neck"],  # not usually in schema; kept fixed
-        "pelvis_to_chest": hu("torsoLengthCm",    _DEFAULTS["pelvis_to_chest"]),
-        "shoulder_hw":     shoulder_hw,
-        "pelvis_hw":       pelvis_hw,
-        "upper_arm_length":hu("upperArmLengthCm", _DEFAULTS["upper_arm_length"]),
-        "forearm_length":  hu("forearmLengthCm",  _DEFAULTS["forearm_length"]),
-        "thigh_length":    hu("thighLengthCm",    _DEFAULTS["thigh_length"]),
-        "shin_length":     hu("shinLengthCm",     _DEFAULTS["shin_length"]),
+        "head_height": 1.0,
+        "neck_length": head_units(
+            "neckLengthInHeads",
+            "neckLengthCm",
+            _DEFAULTS["neck_length"],
+        ),
+        "chest_to_neck": _DEFAULTS["chest_to_neck"],
+        "pelvis_to_chest": head_units(
+            "torsoLengthInHeads",
+            "torsoLengthCm",
+            _DEFAULTS["pelvis_to_chest"],
+        ),
+        "shoulder_hw": shoulder_hw,
+        "pelvis_hw": pelvis_hw,
+        "upper_arm_length": upper_arm_length,
+        "forearm_length": forearm_length,
+        "thigh_length": thigh_length,
+        "shin_length": shin_length,
     }
 
-
-    # --- Segment widths (proximal, distal) ---
     segment_widths: dict[str, tuple[float, float]] = {
-        # torso volumes — stored as (rx, ry) half-axes for the ellipses
-        "ribcage":   (ribcage_hw,  _DEFAULTS["ribcage_width"] * 0.75),
-        "pelvis":    (pelvis_hw,   _DEFAULTS["pelvis_width"]  * 0.55),
-        "neck":      (_DEFAULTS["neck_w_prox"], _DEFAULTS["neck_w_dist"]),
-        # limbs — same width for left and right; volumes.py mirrors them
-        "upper_arm": (_DEFAULTS["upper_arm_w_prox"], _DEFAULTS["upper_arm_w_dist"]),
-        "forearm":   (_DEFAULTS["forearm_w_prox"],   _DEFAULTS["forearm_w_dist"]),
-        "thigh":     (_DEFAULTS["thigh_w_prox"],     _DEFAULTS["thigh_w_dist"]),
-        "shin":      (_DEFAULTS["shin_w_prox"],      _DEFAULTS["shin_w_dist"]),
-        # shoulder_hw exposed so volumes.py can place shoulder joints
+        "ribcage": (ribcage_hw, _DEFAULTS["ribcage_width"] * 0.75),
+        "pelvis": (pelvis_hw, _DEFAULTS["pelvis_width"] * 0.55),
+        "neck": (_DEFAULTS["neck_w_prox"], _DEFAULTS["neck_w_dist"]),
+        "upper_arm": (
+            _DEFAULTS["upper_arm_w_prox"],
+            _DEFAULTS["upper_arm_w_dist"],
+        ),
+        "forearm": (
+            _DEFAULTS["forearm_w_prox"],
+            _DEFAULTS["forearm_w_dist"],
+        ),
+        "thigh": (_DEFAULTS["thigh_w_prox"], _DEFAULTS["thigh_w_dist"]),
+        "shin": (_DEFAULTS["shin_w_prox"], _DEFAULTS["shin_w_dist"]),
         "shoulder_hw": (shoulder_hw, shoulder_hw),
     }
 

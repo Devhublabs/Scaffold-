@@ -1,3 +1,4 @@
+import math
 import time
 
 from app.services.auth_service import (
@@ -12,6 +13,90 @@ from app.services.room_service import (
     leave_room,
 )
 from app.services.canvas_service import save_stroke, get_canvas_state
+from app.services.guide_service import get_room_guides, save_guide
+
+
+MAX_STROKE_POINTS = 10000
+MAX_GUIDE_SHAPES = 1000
+
+
+def _is_finite_number(value) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _is_identifier(value, max_length: int) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and len(value) <= max_length
+    )
+
+
+def _sanitize_stroke(data: dict) -> dict:
+    points = data.get("points")
+    if (
+        not isinstance(points, list)
+        or not 1 <= len(points) <= MAX_STROKE_POINTS
+    ):
+        raise ValueError("points must contain between 1 and 10000 coordinates")
+
+    clean_points = []
+    for point in points:
+        if (
+            not isinstance(point, (list, tuple))
+            or len(point) != 2
+            or not all(_is_finite_number(value) for value in point)
+        ):
+            raise ValueError("each point must contain finite x and y numbers")
+        clean_points.append([float(point[0]), float(point[1])])
+
+    pressures = data.get("pressures")
+    if pressures is None or pressures == []:
+        clean_pressures = [0.5] * len(clean_points)
+    else:
+        if (
+            not isinstance(pressures, list)
+            or len(pressures) != len(clean_points)
+            or not all(_is_finite_number(value) for value in pressures)
+        ):
+            raise ValueError("pressures must contain one number per point")
+        clean_pressures = [
+            min(1.0, max(0.0, float(value)))
+            for value in pressures
+        ]
+
+    color = data.get("color", "#000000")
+    if not isinstance(color, str) or not 1 <= len(color) <= 64:
+        raise ValueError("color must be a non-empty string")
+
+    width = data.get("width", 3)
+    if not _is_finite_number(width) or not 0 < width <= 256:
+        raise ValueError("width must be greater than 0 and at most 256")
+
+    return {
+        "points": clean_points,
+        "pressures": clean_pressures,
+        "color": color,
+        "width": float(width),
+    }
+
+
+def _validate_guide_payload(payload) -> dict:
+    if not isinstance(payload, dict):
+        raise ValueError("payload must be an object")
+
+    character_id = payload.get("characterId")
+    shapes = payload.get("shapes")
+    if not _is_identifier(character_id, 128):
+        raise ValueError("payload.characterId is required")
+    if not isinstance(shapes, list) or len(shapes) > MAX_GUIDE_SHAPES:
+        raise ValueError("payload.shapes must be an array of at most 1000 shapes")
+
+    return payload
 
 
 def register_events(sio):
@@ -97,7 +182,12 @@ def register_events(sio):
         user_id = data.get("userId")
         auth_token = data.get("authToken")
 
-        if not room_id or not user_id or not auth_token:
+        if (
+            not _is_identifier(room_id, 80)
+            or not _is_identifier(user_id, 128)
+            or not isinstance(auth_token, str)
+            or not auth_token.strip()
+        ):
             await emit_error(
                 sid,
                 "AUTH_REQUIRED",
@@ -169,6 +259,14 @@ def register_events(sio):
             }, to=sid)
             print(f"[CANVAS] Sent {len(existing_strokes)} existing strokes to {user_id}")
 
+        existing_guides = await get_room_guides(room_id)
+        if existing_guides:
+            await sio.emit(
+                "co_artist_state",
+                {"guides": existing_guides},
+                to=sid,
+            )
+
         print(f"[ROOM] Users in {room_id}: {get_room_users(room_id)}")
 
     @sio.event
@@ -180,13 +278,18 @@ def register_events(sio):
         x = data.get("x")
         y = data.get("y")
 
-        if x is None or y is None:
+        if not _is_finite_number(x) or not _is_finite_number(y):
+            await emit_error(
+                sid,
+                "INVALID_PAYLOAD",
+                "Cursor x and y must be finite numbers",
+            )
             return
 
         await sio.emit("cursor", {
             "userId": session["userId"],
-            "x": x,
-            "y": y
+            "x": float(x),
+            "y": float(y)
         }, room=session["roomId"], skip_sid=sid)
 
     @sio.event
@@ -195,8 +298,14 @@ def register_events(sio):
         if not session:
             return
 
+        try:
+            stroke_data = _sanitize_stroke(data)
+        except ValueError as exc:
+            await emit_error(sid, "INVALID_PAYLOAD", str(exc))
+            return
+
         sanitized_data = {
-            **data,
+            **stroke_data,
             "roomId": session["roomId"],
             "userId": session["userId"],
         }
@@ -204,10 +313,7 @@ def register_events(sio):
 
         await sio.emit("stroke", {
             "userId": session["userId"],
-            "points": data.get("points"),
-            "color": data.get("color", "#000000"),
-            "width": data.get("width", 3),
-            "pressures": data.get("pressures", [])
+            **stroke_data,
         }, room=session["roomId"], skip_sid=sid)
 
     @sio.event
@@ -216,8 +322,16 @@ def register_events(sio):
         if not session:
             return
 
+        try:
+            payload = _validate_guide_payload(data.get("payload"))
+        except ValueError as exc:
+            await emit_error(sid, "INVALID_PAYLOAD", str(exc))
+            return
+
+        await save_guide(session["roomId"], session["userId"], payload)
+
         await sio.emit("co_artist_shapes", {
             "userId": session["userId"],
-            "payload": data.get("payload")
+            "payload": payload
         }, room=session["roomId"], skip_sid=sid)
 

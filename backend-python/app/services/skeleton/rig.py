@@ -90,14 +90,14 @@ JOINTS: list[dict] = [
         "name": "l_elbow",
         "parent": "l_shoulder",
         "bone_length_field": "upper_arm_length",
-        "rest_angle": 270.0,   # hangs down relative to shoulder's direction (180 + 270 = 450 = 90 = down)
+        "rest_angle": 260.0,   # hangs down and slightly inward toward the torso
         "limits": (180.0, 330.0),
     },
     {
         "name": "l_wrist",
         "parent": "l_elbow",
         "bone_length_field": "forearm_length",
-        "rest_angle": 0.0,     # continues straight down
+        "rest_angle": 4.0,     # soft elbow angle instead of a ruler-straight arm
         "limits": (-45.0, 45.0),
     },
     # --- Right arm ---
@@ -112,14 +112,14 @@ JOINTS: list[dict] = [
         "name": "r_elbow",
         "parent": "r_shoulder",
         "bone_length_field": "upper_arm_length",
-        "rest_angle": 90.0,     # hangs down relative to shoulder's direction (0 + 90 = 90 = down)
+        "rest_angle": 100.0,    # hangs down and slightly inward toward the torso
         "limits": (0.0, 150.0),
     },
     {
         "name": "r_wrist",
         "parent": "r_elbow",
         "bone_length_field": "forearm_length",
-        "rest_angle": 0.0,     # continues straight down
+        "rest_angle": -4.0,    # soft elbow angle instead of a ruler-straight arm
         "limits": (-45.0, 45.0),
     },
     # --- Left leg ---
@@ -134,14 +134,14 @@ JOINTS: list[dict] = [
         "name": "l_knee",
         "parent": "l_hip",
         "bone_length_field": "thigh_length",
-        "rest_angle": 270.0,   # hangs down relative to hip's direction (180 + 270 = 450 = 90 = down)
+        "rest_angle": 275.0,   # slight outward stance keeps both legs readable
         "limits": (180.0, 330.0),
     },
     {
         "name": "l_ankle",
         "parent": "l_knee",
         "bone_length_field": "shin_length",
-        "rest_angle": 0.0,     # continues straight down
+        "rest_angle": -2.0,
         "limits": (-30.0, 30.0),
     },
     # --- Right leg ---
@@ -156,14 +156,14 @@ JOINTS: list[dict] = [
         "name": "r_knee",
         "parent": "r_hip",
         "bone_length_field": "thigh_length",
-        "rest_angle": 90.0,    # hangs down relative to hip's direction (0 + 90 = 90 = down)
+        "rest_angle": 85.0,    # slight outward stance keeps both legs readable
         "limits": (30.0, 180.0),
     },
     {
         "name": "r_ankle",
         "parent": "r_knee",
         "bone_length_field": "shin_length",
-        "rest_angle": 0.0,     # continues straight down
+        "rest_angle": 2.0,
         "limits": (-30.0, 30.0),
     },
 ]

@@ -72,7 +72,8 @@ geometry fitting — not AI generation:
 - [x] Live cursors
 - [x] Stroke synchronisation
 - [x] Stroke persistence and replay (up to 1,000 strokes on join)
-- [ ] Dynamic room creation and shareable room links
+- [x] Dynamic room IDs and shareable room links
+- [x] Co-Artist guide persistence and replay
 - [ ] Shared undo / redo semantics
 
 ### Snap-to-Shape
@@ -84,10 +85,10 @@ geometry fitting — not AI generation:
 
 ### User Features
 - [x] JWT authentication backend (signup, login, protected middleware) — `backend-node`
-- [ ] JWT-protected rooms (Socket.IO auth integration and frontend wiring)
+- [x] JWT-protected Python REST endpoints and Socket.IO rooms
 - [ ] Export (PNG / PDF)
 - [ ] Voice UI
-- [ ] Frontend Co-Artist workflows
+- [x] Frontend Co-Artist guide workflow
 - [ ] Frontend pages (page folders scaffolded, markup in progress)
 
 ---
@@ -208,12 +209,14 @@ cp .env.example .env
 
 | Variable | Used by | Default |
 | --- | --- | --- |
-| `JWT_SECRET` | backend-node | `dev-secret-change-me` |
+| `JWT_SECRET` | backend-node, backend-python | `dev-secret-change-me` |
 | `MONGO_URI` | backend-node, backend-python | `mongodb://mongo:27017/scaffold` |
 | `DAILY_API_KEY` | backend-python | Required for voice token endpoint |
 | `GROQ_API_KEY` | backend-python | Required for Co-Artist proportions |
 | `GROQ_MODEL` | backend-python | `openai/gpt-oss-120b` |
 | `VITE_SOCKET_URL` | frontend | `http://localhost:8000` |
+| `VITE_API_URL` | frontend | `http://localhost:8000` |
+| `VITE_AUTH_API_URL` | frontend | `http://localhost:4000` |
 | `PORT` | backend-node | `4000` |
 
 `.env` is git-ignored so local secrets are never committed. The placeholder
@@ -301,8 +304,8 @@ npm install
 npm run dev
 ```
 
-For a non-Docker frontend pointing at a separately-running Python server, set
-`VITE_SOCKET_URL` in `frontend/.env`.
+For a non-Docker frontend pointing at separately-running services, set
+`VITE_SOCKET_URL`, `VITE_API_URL`, and `VITE_AUTH_API_URL` in `frontend/.env`.
 
 ---
 
@@ -312,9 +315,9 @@ For a non-Docker frontend pointing at a separately-running Python server, set
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/voice/token` | Create or reuse a Daily room and return a one-hour meeting token |
-| `POST` | `/api/co-artist/proportions` | Convert a character description into proportion data via Groq |
-| `POST` | `/api/co-artist/skeleton` | Convert proportion data into deterministic construction and contour shapes |
+| `POST` | `/api/voice/token` | JWT-protected; create or reuse a Daily room and return a one-hour meeting token |
+| `POST` | `/api/co-artist/proportions` | JWT-protected; convert a character description into proportion data via Groq |
+| `POST` | `/api/co-artist/skeleton` | JWT-protected; convert proportion data into deterministic construction and contour shapes |
 | `POST` | `/auth/signup`, `/auth/login` on port 4000 | Create an account / obtain a JWT (`authController.js`) |
 | `GET` | `/auth/me` on port 4000 | JWT-protected — returns the current user (`requireAuth.js`) |
 | `GET` | `/health` on port 4000 | Check the Node service |
@@ -334,10 +337,11 @@ Interactive request schemas for the Python service: http://localhost:8000/docs
 | Server → client | `cursor` | Receive another user's cursor |
 | Server → client | `stroke` | Receive another user's stroke |
 | Server → client | `co_artist_shapes` | Receive another user's Co-Artist payload |
+| Server → client | `co_artist_state` | Replay persisted Co-Artist guides to a joining user |
 
-Socket-level JWT validation is being built out (`app/services/auth_service.py`,
-covered by `tests/test_socket_auth.py`) but is not yet enforced end-to-end —
-see [Known Limitations](#known-limitations).
+Socket-level JWT validation is enforced by `app/services/auth_service.py`.
+The same Node-issued JWT also protects Python REST endpoints, and the frontend
+sends it to both transports.
 
 ### Stroke data contract
 
@@ -524,8 +528,22 @@ Works inside `backend-python/`
 - Co-Artist backend: pipeline orchestration (`co_artist_service.py`) and the
   skeleton engine (`skeleton_service.py` and the `skeleton/` package — FK,
   rig, silhouette, volumes, proportions resolver)
-- Socket-level JWT validation (`auth_service.py`), in progress alongside
-  `test_socket_auth.py`
+- Socket and REST JWT validation (`auth_service.py`, `api/dependencies.py`)
+- Co-Artist guide persistence and replay (`guide_service.py`)
+- Socket payload validation for cursors, strokes, and guide envelopes
+
+#### Ronald's next steps
+
+1. Add room authorization data: owners, members, invitations, and a server-side
+   permission check before `join_room_event` accepts a valid JWT.
+2. Define persistent canvas operations with object IDs so shared undo, delete,
+   restore, snap-to-shape objects, and idempotent reconnects use one contract.
+3. Add MongoDB indexes and retention rules for strokes and Co-Artist guides,
+   then load-test large rooms and replay limits.
+4. Finish the Daily frontend flow and harden the voice service with explicit
+   configuration errors, request timeouts, and provider error mapping.
+5. Add rate limits, structured logging, health/readiness checks, and production
+   CORS/JWT configuration before deployment.
 
 ### Testimony — Node Backend
 
@@ -674,15 +692,15 @@ Current milestones:
   FK, rig, silhouette, volumes, proportions resolver)
 - ✅ Snap-to-shape detectors and fitters
 - ✅ Node auth backend (signup, login, JWT middleware, User model)
-- 🚧 Socket.IO / room JWT integration (`auth_service.py`, `test_socket_auth.py`)
+- ✅ Python REST and Socket.IO JWT integration
 - 🚧 Snap-to-shape canvas integration
 - 🚧 Frontend pages (page folders scaffolded, markup in progress — Davis)
 - ⏳ Select & Scale
 - ⏳ Manga page templates
-- ⏳ Dynamic room creation and room links
+- ✅ Dynamic room IDs and room links
 - ⏳ Export (PNG / PDF) — `exports/` folder scaffolded, no implementation yet
 - ⏳ Voice UI
-- ⏳ Frontend Co-Artist workflows
+- ✅ Frontend Co-Artist guide workflow
 
 ---
 
@@ -690,6 +708,25 @@ Current milestones:
 
 This section tracks completed frontend canvas milestones. Update it when a
 significant piece of canvas or socket work lands.
+
+### July 26, 2026
+
+**Authentication and rooms**
+- Sign up and sign in use the Node auth API and store the JWT in session storage
+- Python REST and Socket.IO requests use the same authenticated identity
+- Room IDs come from the room screen or the `?room=` URL parameter
+- Workspace links can be copied and shared
+
+**Co-Artist integration**
+- Character descriptions call the proportions and skeleton endpoints
+- Head-unit guide payloads render as grouped Fabric construction/contour objects
+- Guides broadcast to collaborators and replay from MongoDB on join
+- Groq head-unit proportion fields now drive the deterministic skeleton rig
+
+**Canvas corrections**
+- Replayed remote strokes are excluded from local undo history
+- Stroke payloads are validated and missing pressure arrays normalize to `0.5`
+- Layer IDs are collision-resistant
 
 ### July 13, 2026
 
@@ -712,7 +749,7 @@ significant piece of canvas or socket work lands.
 - Incoming remote cursors render as labeled cursor dots in collaborator colors
 - Incoming remote strokes replay onto the Fabric canvas
 
-**Current development placeholders** (replace once room/auth flow is built)
+**Development placeholders on July 13, 2026**
 - `roomId` is hardcoded as `abc123`
 - `userId` is generated in sessionStorage as `user_xxxxx`
 - `authToken` is currently `dev-token`
@@ -731,11 +768,9 @@ significant piece of canvas or socket work lands.
 }
 ```
 
-**Integration note for Ronald** — the frontend sends `pressures` alongside
-`points`. If `pressures` is missing from an incoming remote stroke, the
-frontend falls back to `0.5` pressure so replay still works. Please confirm
-the Python backend stores and broadcasts `pressures` on both `stroke` and
-`canvas_state` events.
+**Integration note for Ronald** — confirmed on July 26, 2026: the Python
+backend stores and broadcasts `pressures` on both `stroke` and `canvas_state`
+events. Missing arrays are normalized to `0.5` per point before persistence.
 
 **Verification steps run**
 - `npm run lint` — passed
@@ -764,30 +799,22 @@ Scaffold/
 
 ## Known Limitations
 
-- JWT authentication now exists in `backend-node` (`authController.js`,
-  `authService.js`, `requireAuth.js`, `User.js`, `utils/jwt.js`) but is not
-  yet wired into Socket.IO room access or the frontend Auth pages
-- The `authToken` sent by the development client is still hardcoded
-  (`dev-token`) and not validated
-- Socket-level JWT validation (`auth_service.py`, `test_socket_auth.py`) is
-  in progress but not yet enforced end-to-end
 - Export (PNG / PDF) has a placeholder `exports/` folder in `backend-node`
   but no implementation yet
-- The Python Socket.IO server currently allows all CORS origins
+- Any authenticated user can currently join any room ID; room ownership,
+  invitations, and membership authorization are not implemented
+- JWTs expire after one hour and there is no refresh-token flow
 - The eraser draws with the canvas background color; it is not a destructive
   Fabric object eraser
 - Undo and redo are local canvas operations and are not synchronised as delete
   or restore events across collaborators
-- Co-Artist guides are broadcast but are not persisted in MongoDB
-- The frontend currently joins a fixed development room (`abc123`) with a
-  temporary session-storage user ID; there is no dynamic room creation or join
-  UI yet
+- Co-Artist guide geometry is persisted, but user placement/transform edits are
+  not yet synchronised or stored
+- Co-Artist description extraction requires a configured `GROQ_API_KEY`
 - The frontend production build reports a bundle-size warning above 500 kB
-- `frontend/src/context/layers-context.js` is a stale duplicate of
-  `LayersContext.jsx` and should be deleted
-- Most `frontend/src/pages/` folders (`Auth`, `Dashboard`, `Export`,
-  `Landing`, `Room`, `Workspace`) are scaffolded but still empty; `Projects`,
-  `Settings`, `Members`, and `Templates` don't have a folder yet
+- Snap-to-shape is still not wired into the canvas/socket object contract
+- Dashboard, Export, and Landing remain scaffold-only; Projects, Settings,
+  Members, and Templates do not have page folders yet
 
 ---
 

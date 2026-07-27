@@ -1,69 +1,106 @@
-import { useCallback, useEffect, useRef, useState, useContext } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import * as fabric from "fabric";
-import { PressureBrush } from "../brushes/PressureBrush";
-import { EraserBrush } from "../brushes/EraserBrush";
+
+import CoArtistPanel from "../../components/CoArtistPanel";
 import { LayersContext } from "../../context/layers-context";
+import { createCoArtistGuide } from "../../services/coArtist";
 import socket from "../../socket/socket";
+import { EraserBrush } from "../brushes/EraserBrush";
+import { PressureBrush } from "../brushes/PressureBrush";
+import { createGuideObject } from "../coArtist/createGuideObject";
 
-const ROOM_ID = "abc123";
-const AUTH_TOKEN = "dev-token";
-const CURSOR_COLORS = ["#E8544E", "#3DB88C", "#E6B33D", "#A66DE0", "#3D7EDB", "#E67E3D"];
 
-function getDevUserId() {
-  const key = "scaffold-dev-user-id";
-  const existing = window.sessionStorage.getItem(key);
-  if (existing) return existing;
+const CURSOR_COLORS = [
+  "#E8544E",
+  "#3DB88C",
+  "#E6B33D",
+  "#A66DE0",
+  "#3D7EDB",
+  "#E67E3D",
+];
+const AUTH_ERROR_CODES = new Set(["INVALID_TOKEN"]);
 
-  const userId = `user_${Math.random().toString(36).slice(2, 7)}`;
-  window.sessionStorage.setItem(key, userId);
-  return userId;
-}
 
 function getCursorColor(userId) {
   let hash = 0;
-  for (let i = 0; i < userId.length; i++) hash += userId.charCodeAt(i);
+  for (let i = 0; i < userId.length; i += 1) {
+    hash += userId.charCodeAt(i);
+  }
   return CURSOR_COLORS[hash % CURSOR_COLORS.length];
 }
 
-function DrawingCanvas() {
+
+function makeCharacterId() {
+  return typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `character_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+
+function DrawingCanvas({ roomId, session, onAuthExpired }) {
   const wrapperRef = useRef(null);
   const canvasElRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const activeLayerIdRef = useRef(null);
+  const guideLayerIdRef = useRef(null);
+  const guideObjectsRef = useRef(new Map());
+  const renderGuideRef = useRef(null);
   const historyRef = useRef([]);
   const redoRef = useRef([]);
+  const characterIdRef = useRef(makeCharacterId());
   const [activeTool, setActiveTool] = useState("pencil");
-  const [debug, setDebug] = useState({ type: "—", pressure: 0 });
+  const [debug, setDebug] = useState({ type: "-", pressure: 0 });
   const [collaborators, setCollaborators] = useState([]);
   const [remoteCursors, setRemoteCursors] = useState({});
-  const userIdRef = useRef(getDevUserId());
-  const { addObjectToLayer, removeObjectFromLayers, addLayer, activeLayerId } =
-    useContext(LayersContext);
+  const [socketStatus, setSocketStatus] = useState("connecting");
+  const [connectionError, setConnectionError] = useState("");
+  const [coArtistStatus, setCoArtistStatus] = useState({
+    state: "idle",
+    message: "",
+  });
+  const {
+    addObjectToLayer,
+    removeObjectFromLayers,
+    addLayer,
+    setActiveLayer,
+    activeLayerId,
+  } = useContext(LayersContext);
 
   useEffect(() => {
     activeLayerIdRef.current = activeLayerId;
   }, [activeLayerId]);
 
-  const rememberObject = useCallback((object, layerId) => {
-    addObjectToLayer(object, layerId);
-    historyRef.current.push({ object, layerId });
-    redoRef.current = [];
-  }, [addObjectToLayer]);
+  const rememberLocalObject = useCallback(
+    (object, layerId) => {
+      addObjectToLayer(object, layerId);
+      historyRef.current.push({ object, layerId });
+      redoRef.current = [];
+    },
+    [addObjectToLayer],
+  );
 
-  const emitStroke = useCallback((object) => {
-    const stroke = object?.scaffoldStrokeData;
-    if (!stroke?.points?.length) return;
+  const emitStroke = useCallback(
+    (object) => {
+      const stroke = object?.scaffoldStrokeData;
+      if (!stroke?.points?.length) return;
 
-    socket.emit("stroke", {
-      type: "stroke",
-      roomId: ROOM_ID,
-      userId: userIdRef.current,
-      points: stroke.points,
-      pressures: stroke.pressures,
-      color: stroke.color,
-      width: stroke.width,
-    });
-  }, []);
+      socket.emit("stroke", {
+        roomId,
+        userId: session.userId,
+        points: stroke.points,
+        pressures: stroke.pressures,
+        color: stroke.color,
+        width: stroke.width,
+      });
+    },
+    [roomId, session.userId],
+  );
 
   const undo = () => {
     const canvas = fabricCanvasRef.current;
@@ -87,12 +124,51 @@ function DrawingCanvas() {
     canvas.requestRenderAll();
   };
 
+  const generateGuide = useCallback(
+    async (description) => {
+      setCoArtistStatus({ state: "loading", message: "" });
+
+      try {
+        const { analysis, guide } = await createCoArtistGuide({
+          description,
+          token: session.token,
+          characterId: characterIdRef.current,
+        });
+        if (!renderGuideRef.current) {
+          throw new Error("Canvas is not ready");
+        }
+
+        renderGuideRef.current(guide, true);
+        socket.emit("co_artist_shapes", {
+          roomId,
+          userId: session.userId,
+          payload: guide,
+        });
+
+        const message =
+          analysis.clarifyingQuestion ||
+          `${analysis.style || "Character"} guide added`;
+        setCoArtistStatus({ state: "success", message });
+      } catch (error) {
+        setCoArtistStatus({ state: "error", message: error.message });
+      }
+    },
+    [roomId, session.token, session.userId],
+  );
+
   useEffect(() => {
     const computeSize = () => {
-      const width = wrapperRef.current.clientWidth;
+      const viewportPadding = window.innerWidth <= 840 ? 28 : 44;
+      const width = Math.min(
+        wrapperRef.current.clientWidth,
+        window.innerWidth - viewportPadding,
+      );
       const top = wrapperRef.current.getBoundingClientRect().top;
-      const height = Math.max(320, Math.round(window.innerHeight - top - 24));
-      return { width, height };
+      const availableHeight = Math.round(window.innerHeight - top - 24);
+      return {
+        width,
+        height: Math.max(420, Math.min(780, availableHeight)),
+      };
     };
 
     const canvas = new fabric.Canvas(canvasElRef.current, {
@@ -103,31 +179,60 @@ function DrawingCanvas() {
     });
 
     fabricCanvasRef.current = canvas;
+    const guideObjects = guideObjectsRef.current;
     const sketchLayerId = addLayer("Sketch");
+    const guideLayerId = addLayer("Co-Artist Guides");
     activeLayerIdRef.current = sketchLayerId;
+    guideLayerIdRef.current = guideLayerId;
+    setActiveLayer(sketchLayerId);
+
+    const renderGuide = (payload, undoable) => {
+      const characterId = payload?.characterId;
+      if (!characterId) return;
+
+      const existing = guideObjects.get(characterId);
+      if (existing) {
+        canvas.remove(existing);
+        removeObjectFromLayers(existing);
+      }
+
+      const object = createGuideObject(payload, canvas);
+      if (!object) return;
+
+      canvas.add(object);
+      addObjectToLayer(object, guideLayerIdRef.current);
+      if (undoable) {
+        historyRef.current.push({
+          object,
+          layerId: guideLayerIdRef.current,
+        });
+        redoRef.current = [];
+      }
+      guideObjects.set(characterId, object);
+      canvas.requestRenderAll();
+    };
+    renderGuideRef.current = renderGuide;
 
     const upperCanvas = canvas.upperCanvasEl;
     let lastCursorEmitAt = 0;
-    const readout = (e) =>
-      setDebug({ type: e.pointerType || "—", pressure: e.pressure ?? 0 });
-    const emitCursor = (e) => {
+    const readout = (event) =>
+      setDebug({
+        type: event.pointerType || "-",
+        pressure: event.pressure ?? 0,
+      });
+    const emitCursor = (event) => {
       const now = performance.now();
-      if (now - lastCursorEmitAt < 16) return;
+      if (now - lastCursorEmitAt < 16 || !socket.connected) return;
       lastCursorEmitAt = now;
 
       const rect = upperCanvas.getBoundingClientRect();
       const scaleX = canvas.getWidth() / rect.width;
       const scaleY = canvas.getHeight() / rect.height;
-      const pointer = {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
-      };
       socket.emit("cursor", {
-        type: "cursor",
-        roomId: ROOM_ID,
-        userId: userIdRef.current,
-        x: pointer.x,
-        y: pointer.y,
+        roomId,
+        userId: session.userId,
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY,
       });
     };
     upperCanvas.addEventListener("pointerdown", readout);
@@ -142,7 +247,7 @@ function DrawingCanvas() {
     window.addEventListener("orientationchange", handleResize);
 
     canvas.on("path:created", ({ path }) => {
-      rememberObject(path, activeLayerIdRef.current);
+      rememberLocalObject(path, activeLayerIdRef.current);
       emitStroke(path);
     });
 
@@ -151,7 +256,7 @@ function DrawingCanvas() {
       if (!object) return;
 
       canvas.add(object);
-      rememberObject(object, activeLayerIdRef.current);
+      addObjectToLayer(object, sketchLayerId);
       canvas.requestRenderAll();
     };
 
@@ -160,11 +265,20 @@ function DrawingCanvas() {
       strokes.forEach(replayStroke);
     };
 
-    const handleCursor = (data) => {
-      if (!data?.userId || data.userId === userIdRef.current) return;
+    const handleGuideState = (data) => {
+      const guides = Array.isArray(data?.guides) ? data.guides : [];
+      guides.forEach((guide) => renderGuide(guide, false));
+    };
 
-      setRemoteCursors((prev) => ({
-        ...prev,
+    const handleGuide = (data) => {
+      if (data?.payload) renderGuide(data.payload, false);
+    };
+
+    const handleCursor = (data) => {
+      if (!data?.userId || data.userId === session.userId) return;
+
+      setRemoteCursors((current) => ({
+        ...current,
         [data.userId]: {
           x: data.x,
           y: data.y,
@@ -177,17 +291,55 @@ function DrawingCanvas() {
       setCollaborators(Array.isArray(data?.users) ? data.users : []);
     };
 
+    const handleUserLeft = (data) => {
+      setCollaborators(Array.isArray(data?.users) ? data.users : []);
+      if (!data?.userId) return;
+      setRemoteCursors((current) => {
+        const next = { ...current };
+        delete next[data.userId];
+        return next;
+      });
+    };
+
+    const handleSocketError = (data) => {
+      const message = data?.message || "Socket request failed";
+      setConnectionError(message);
+      if (AUTH_ERROR_CODES.has(data?.code)) onAuthExpired();
+    };
+
+    const joinRoom = () => {
+      setSocketStatus("connected");
+      setConnectionError("");
+      socket.emit("join_room_event", {
+        roomId,
+        userId: session.userId,
+        authToken: session.token,
+      });
+    };
+
+    const handleDisconnect = () => setSocketStatus("disconnected");
+    const handleConnectError = (error) => {
+      setSocketStatus("disconnected");
+      setConnectionError(error.message || "Could not connect");
+    };
+
+    socket.on("connect", joinRoom);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", handleConnectError);
+    socket.on("error", handleSocketError);
     socket.on("stroke", replayStroke);
     socket.on("canvas_state", handleCanvasState);
+    socket.on("co_artist_state", handleGuideState);
+    socket.on("co_artist_shapes", handleGuide);
     socket.on("cursor", handleCursor);
     socket.on("user_joined", handleUserJoined);
+    socket.on("user_left", handleUserLeft);
 
-    socket.emit("join_room_event", {
-      type: "join-room",
-      roomId: ROOM_ID,
-      userId: userIdRef.current,
-      authToken: AUTH_TOKEN,
-    });
+    if (socket.connected) {
+      joinRoom();
+    } else {
+      socket.connect();
+    }
 
     return () => {
       upperCanvas.removeEventListener("pointerdown", readout);
@@ -195,13 +347,34 @@ function DrawingCanvas() {
       upperCanvas.removeEventListener("pointermove", emitCursor);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
+      socket.off("connect", joinRoom);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError);
+      socket.off("error", handleSocketError);
       socket.off("stroke", replayStroke);
       socket.off("canvas_state", handleCanvasState);
+      socket.off("co_artist_state", handleGuideState);
+      socket.off("co_artist_shapes", handleGuide);
       socket.off("cursor", handleCursor);
       socket.off("user_joined", handleUserJoined);
+      socket.off("user_left", handleUserLeft);
+      socket.disconnect();
+      renderGuideRef.current = null;
+      guideObjects.clear();
       canvas.dispose();
     };
-  }, [addLayer, emitStroke, rememberObject]);
+  }, [
+    addLayer,
+    addObjectToLayer,
+    emitStroke,
+    onAuthExpired,
+    rememberLocalObject,
+    removeObjectFromLayers,
+    roomId,
+    session.token,
+    session.userId,
+    setActiveLayer,
+  ]);
 
   useEffect(() => {
     const canvas = fabricCanvasRef.current;
@@ -219,32 +392,65 @@ function DrawingCanvas() {
   }, [activeTool]);
 
   return (
-    <div className="canvas-frame" ref={wrapperRef}>
-      <div style={{ position: "fixed", top: 10, left: 10, zIndex: 10, display: "flex", gap: 8 }}>
-        <button onClick={() => setActiveTool("pencil")}>Pencil</button>
-        <button onClick={() => setActiveTool("pen")}>Pen</button>
-        <button onClick={() => setActiveTool("eraser")}>Eraser</button>
-        <button onClick={undo}>Undo</button>
-        <button onClick={redo}>Redo</button>
-      </div>
-      <div className="collaborator-strip">
-        {collaborators.map((userId) => (
-          <span key={userId}>{userId}</span>
-        ))}
-      </div>
-      <canvas ref={canvasElRef} />
-      {Object.entries(remoteCursors).map(([userId, cursor]) => (
-        <div
-          className="remote-cursor"
-          key={userId}
-          style={{ left: cursor.x, top: cursor.y, "--cursor-color": cursor.color }}
-        >
-          <span>{userId}</span>
+    <div className="workspace-layout">
+      <CoArtistPanel onGenerate={generateGuide} status={coArtistStatus} />
+
+      <section className="drawing-surface">
+        <div className="canvas-toolbar">
+          <div className="segmented-control" aria-label="Drawing tool">
+            {["pencil", "pen", "eraser"].map((tool) => (
+              <button
+                key={tool}
+                type="button"
+                aria-pressed={activeTool === tool}
+                onClick={() => setActiveTool(tool)}
+              >
+                {tool[0].toUpperCase() + tool.slice(1)}
+              </button>
+            ))}
+          </div>
+          <div className="toolbar-actions">
+            <button type="button" onClick={undo}>
+              Undo
+            </button>
+            <button type="button" onClick={redo}>
+              Redo
+            </button>
+            <span className={`socket-status ${socketStatus}`}>
+              {socketStatus}
+            </span>
+          </div>
         </div>
-      ))}
-      <div className="pointer-readout">
-        {debug.type} · {debug.pressure.toFixed(3)}
-      </div>
+
+        {connectionError && (
+          <p className="connection-error">{connectionError}</p>
+        )}
+
+        <div className="canvas-frame" ref={wrapperRef}>
+          <div className="collaborator-strip">
+            {collaborators.map((userId) => (
+              <span key={userId}>{userId}</span>
+            ))}
+          </div>
+          <canvas ref={canvasElRef} />
+          {Object.entries(remoteCursors).map(([userId, cursor]) => (
+            <div
+              className="remote-cursor"
+              key={userId}
+              style={{
+                left: cursor.x,
+                top: cursor.y,
+                "--cursor-color": cursor.color,
+              }}
+            >
+              <span>{userId}</span>
+            </div>
+          ))}
+          <div className="pointer-readout">
+            {debug.type} / {debug.pressure.toFixed(3)}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

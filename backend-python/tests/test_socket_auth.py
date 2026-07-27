@@ -43,7 +43,9 @@ def clear_room_state():
 def socket_server(monkeypatch):
     server = FakeSocketServer()
     monkeypatch.setattr(events, "get_canvas_state", AsyncMock(return_value=[]))
+    monkeypatch.setattr(events, "get_room_guides", AsyncMock(return_value=[]))
     monkeypatch.setattr(events, "save_stroke", AsyncMock())
+    monkeypatch.setattr(events, "save_guide", AsyncMock())
     events.register_events(server)
     return server
 
@@ -139,6 +141,48 @@ async def test_stroke_uses_authenticated_identity(socket_server, monkeypatch):
     assert saved[0] == "room1"
     assert saved[1]["userId"] == "user_A"
     assert saved[1]["roomId"] == "room1"
+    assert saved[1]["pressures"] == [0.5, 0.5]
+
+
+async def test_stroke_rejects_invalid_coordinates(socket_server, monkeypatch):
+    await join(socket_server, monkeypatch)
+
+    await socket_server.handlers["stroke"](
+        "sid_A",
+        {
+            "roomId": "room1",
+            "userId": "user_A",
+            "points": [[1, 2], ["not-a-number", 4]],
+        },
+    )
+
+    events.save_stroke.assert_not_awaited()
+    assert socket_server.emitted[-1]["data"]["code"] == "INVALID_PAYLOAD"
+
+
+async def test_co_artist_shapes_are_persisted_before_broadcast(
+    socket_server,
+    monkeypatch,
+):
+    await join(socket_server, monkeypatch)
+    payload = {
+        "characterId": "char_1",
+        "shapes": [],
+    }
+
+    await socket_server.handlers["co_artist_shapes"](
+        "sid_A",
+        {
+            "roomId": "room1",
+            "userId": "user_A",
+            "payload": payload,
+        },
+    )
+
+    events.save_guide.assert_awaited_once_with("room1", "user_A", payload)
+    broadcast = socket_server.emitted[-1]
+    assert broadcast["event"] == "co_artist_shapes"
+    assert broadcast["data"]["payload"] == payload
 
 
 async def test_events_reject_sessions_after_token_expiration(

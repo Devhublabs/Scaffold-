@@ -1,24 +1,318 @@
-.canvas-frame {
-  position: relative;
-  margin: 24px auto;
-  width: 100%;
-  max-width: 1000px;
+* {
+  box-sizing: border-box;
 }
 
-/* Dev readout of live pointerType + raw pressure. pointer-events:none so it
-   never intercepts drawing. Remove once pressure is verified on device. */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100svh;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: 36px;
+  padding: 7px 12px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  background: #292c34;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+input,
+textarea {
+  width: 100%;
+  color: var(--text-primary);
+  background: #15161a;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+input {
+  height: 42px;
+  padding: 0 11px;
+}
+
+textarea {
+  min-height: 112px;
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(61 126 219 / 18%);
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+form {
+  display: grid;
+  gap: 14px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  color: var(--text-primary);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+h2 {
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.brand {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.muted-text,
+.panel-status {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.form-error,
+.connection-error {
+  color: #ff817c;
+  font-size: 13px;
+}
+
+.primary-button {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.secondary-button {
+  background: var(--panel);
+}
+
+.segmented-control {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(82px, 1fr);
+  gap: 2px;
+  padding: 3px;
+  background: #17181d;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.segmented-control button {
+  min-width: 0;
+  border: 0;
+}
+
+.segmented-control button[aria-pressed="true"] {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.auth-page,
+.room-page {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 32px 20px;
+}
+
+.auth-panel,
+.room-panel {
+  width: min(100%, 420px);
+  padding: 28px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.auth-panel header,
+.room-panel header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.room-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-panel .segmented-control {
+  margin-bottom: 20px;
+}
+
+.workspace-page {
+  min-height: 100svh;
+  padding: 18px 22px 24px;
+  overflow-x: hidden;
+}
+
+.workspace-header {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.workspace-header > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  min-width: 0;
+}
+
+.room-name {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-actions,
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-actions span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.workspace-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: calc(100svh - 100px);
+}
+
+.co-artist-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px 20px 22px 0;
+  border-right: 1px solid var(--border);
+}
+
+.co-artist-panel > div {
+  display: grid;
+  gap: 4px;
+}
+
+.panel-label {
+  color: #e6b33d;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.drawing-surface {
+  min-width: 0;
+  padding: 18px 0 0 20px;
+}
+
+.canvas-toolbar {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.canvas-toolbar .segmented-control {
+  width: min(100%, 310px);
+  grid-auto-flow: initial;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.socket-status {
+  min-width: 82px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+  text-transform: capitalize;
+}
+
+.socket-status.connected {
+  color: #61c99c;
+}
+
+.socket-status.disconnected {
+  color: #ff817c;
+}
+
+.connection-error {
+  margin-bottom: 8px;
+}
+
+.canvas-frame {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .pointer-readout {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 4;
   padding: 4px 8px;
-  font-family: var(--font);
-  font-size: 12px;
-  line-height: 1;
   color: var(--text-muted);
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1;
   pointer-events: none;
   user-select: none;
 }
@@ -29,19 +323,24 @@
   bottom: 8px;
   z-index: 4;
   display: flex;
+  max-width: calc(100% - 16px);
   gap: 4px;
+  overflow: hidden;
   pointer-events: none;
 }
 
 .collaborator-strip span {
+  max-width: 150px;
+  overflow: hidden;
   padding: 3px 6px;
   color: var(--text-primary);
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-family: var(--font);
   font-size: 11px;
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .remote-cursor {
@@ -60,28 +359,65 @@
   position: absolute;
   top: 10px;
   left: 10px;
+  max-width: 160px;
+  overflow: hidden;
   padding: 2px 6px;
   color: #ffffff;
   background: var(--cursor-color);
   border-radius: var(--radius);
-  font-family: var(--font);
   font-size: 11px;
   line-height: 1.2;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Fabric wraps our <canvas> in a .canvas-container — border that so the
-   frame hugs the actual drawing area exactly. Direct child only, so a
-   double-mount can never stack a second bordered box. */
 .canvas-frame > .canvas-container {
+  max-width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  /* The drawing surface stays white (paper) even on the dark UI. */
   background: #ffffff;
 }
 
-/* Let touch/stylus drags draw on the canvas instead of scrolling/zooming the
-   page. Applies to both the lower and Fabric's upper (event) canvas. */
 .canvas-frame canvas {
   touch-action: none;
+}
+
+@media (max-width: 840px) {
+  .workspace-page {
+    padding: 14px;
+  }
+
+  .workspace-header,
+  .canvas-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workspace-actions,
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .workspace-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .co-artist-panel {
+    padding: 18px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .drawing-surface {
+    padding: 14px 0 0;
+  }
+
+  .canvas-toolbar .segmented-control {
+    width: 100%;
+  }
+
+  .socket-status {
+    margin-left: auto;
+  }
 }

@@ -98,6 +98,15 @@ class TestDefaultFallback:
             assert pw >= dw, f"{key}: proximal ({pw}) should be >= distal ({dw})"
 
 
+    def test_default_limb_widths_are_visible_at_canvas_scale(self):
+        _, segment_widths = resolve({})
+
+        assert segment_widths["upper_arm"][0] >= 0.20
+        assert segment_widths["forearm"][0] >= 0.16
+        assert segment_widths["thigh"][0] >= 0.30
+        assert segment_widths["shin"][0] >= 0.22
+
+
 class TestCmConversion:
     """Full proportions dict → correct head-unit conversion."""
 
@@ -145,3 +154,60 @@ class TestPartialProportions:
         assert bone_lengths["upper_arm_length"] == pytest.approx(32.0 / 23.0, rel=1e-3)
         # shin_length was not provided — falls back to default
         assert bone_lengths["shin_length"] == pytest.approx(_DEFAULTS["shin_length"])
+
+
+class TestHeadUnitSchema:
+    def test_groq_head_unit_fields_override_defaults(self):
+        proportions = {
+            "bodyHeightInHeads": 8.0,
+            "shoulderWidthInHeads": 2.0,
+            "hipWidthInHeads": 1.6,
+            "legLengthRatio": 0.5,
+            "armLengthInHeads": 3.0,
+            "neckLengthInHeads": 0.4,
+            "torsoLengthInHeads": 2.4,
+        }
+
+        bone_lengths, segment_widths = resolve(proportions)
+
+        assert bone_lengths["neck_length"] == pytest.approx(0.4)
+        assert bone_lengths["pelvis_to_chest"] == pytest.approx(2.4)
+        assert (
+            bone_lengths["upper_arm_length"]
+            + bone_lengths["forearm_length"]
+        ) == pytest.approx(3.0)
+        assert (
+            bone_lengths["thigh_length"]
+            + bone_lengths["shin_length"]
+        ) == pytest.approx(4.0)
+        assert segment_widths["shoulder_hw"][0] == pytest.approx(1.0)
+        assert segment_widths["pelvis"][0] == pytest.approx(0.8)
+
+    def test_direct_head_units_take_priority_over_centimeters(self):
+        proportions = {
+            "headHeightCm": 20,
+            "shoulderWidthCm": 30,
+            "shoulderWidthInHeads": 2.2,
+        }
+
+        _, segment_widths = resolve(proportions)
+
+        assert segment_widths["shoulder_hw"][0] == pytest.approx(1.1)
+
+    def test_invalid_optional_values_fall_back_without_crashing(self):
+        bone_lengths, segment_widths = resolve({
+            "headHeightCm": "invalid",
+            "armLengthInHeads": -3,
+            "hipWidthInHeads": None,
+        })
+
+        assert bone_lengths["upper_arm_length"] == pytest.approx(
+            _DEFAULTS["upper_arm_length"]
+        )
+        assert segment_widths["pelvis"][0] == pytest.approx(
+            _DEFAULTS["pelvis_width"]
+        )
+
+    def test_non_dictionary_input_is_rejected(self):
+        with pytest.raises(TypeError):
+            resolve(None)

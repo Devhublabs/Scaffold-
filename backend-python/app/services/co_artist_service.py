@@ -56,7 +56,15 @@ Return this exact JSON structure:
 }"""
 
 
-async def extract_proportions(description: str, history: list = []) -> dict:
+async def extract_proportions(
+    description: str,
+    history: list | None = None,
+) -> dict:
+    if not GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY is not configured")
+
+    history = history or []
+
     # Groq is OpenAI-compatible: the system prompt is the first chat message.
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
@@ -85,8 +93,6 @@ async def extract_proportions(description: str, history: list = []) -> dict:
         raw = response.json()
 
         # Debug — log full response
-        print(f"[CO-ARTIST] Raw response: {json.dumps(raw, indent=2)}")
-
         text = raw["choices"][0]["message"]["content"].strip()
 
         # Strip markdown code blocks if model adds them anyway
@@ -96,8 +102,7 @@ async def extract_proportions(description: str, history: list = []) -> dict:
                 text = text[4:]
             text = text.strip()
 
-        print(f"[CO-ARTIST] Cleaned text: {text[:200]}")
-
         proportions = json.loads(text)
-        print(f"[CO-ARTIST] Style: {proportions['style']}, confident: {proportions['styleConfident']}")
+        if not isinstance(proportions, dict):
+            raise ValueError("Co-Artist response must be a JSON object")
         return proportions
