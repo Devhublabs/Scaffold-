@@ -1,16 +1,21 @@
 import {
   boundingBox,
   centroid,
+  countSharpTurns,
   distance,
   isClosedShape,
   pathLength,
+  resampleClosedPath,
+  smoothClosedPath,
 } from "../utils/index.js";
 
 const MINIMUM_POINT_COUNT = 6;
 const MINIMUM_DIMENSION = 8;
+const RESAMPLE_COUNT = 64;
 const MINIMUM_CLOSURE_THRESHOLD = 4;
-const MAXIMUM_CLOSURE_THRESHOLD = 20;
-const CLOSURE_SCALE_RATIO = 0.12;
+const MAXIMUM_CLOSURE_THRESHOLD = 96;
+const CLOSURE_SCALE_RATIO = 0.25;
+const MAXIMUM_SHARP_TURN_COUNT = 6;
 const MAXIMUM_RADIUS_VARIATION = 0.2;
 const MINIMUM_CONFIDENCE = 0.78;
 
@@ -57,9 +62,25 @@ export function detectCircle(points) {
     return null;
   }
 
-  const center = centroid(points);
-  const strokeLength = pathLength(points);
-  const closureDistance = distance(points[points.length - 1], points[0]);
+  const sampledPoints = resampleClosedPath(points, RESAMPLE_COUNT);
+  const analysisPoints = smoothClosedPath(sampledPoints, 1);
+
+  if (analysisPoints === null) {
+    return null;
+  }
+
+  const sharpTurnCount = countSharpTurns(analysisPoints);
+
+  if (
+    sharpTurnCount === null ||
+    sharpTurnCount > MAXIMUM_SHARP_TURN_COUNT
+  ) {
+    return null;
+  }
+
+  const center = centroid(analysisPoints);
+  const strokeLength = pathLength(analysisPoints);
+  const closureDistance = distance(analysisPoints.at(-1), analysisPoints[0]);
 
   if (
     center === null ||
@@ -71,7 +92,7 @@ export function detectCircle(points) {
     return null;
   }
 
-  const radialMetrics = calculateRadialMetrics(points, center);
+  const radialMetrics = calculateRadialMetrics(analysisPoints, center);
 
   if (radialMetrics === null || radialMetrics.meanRadius <= 0) {
     return null;

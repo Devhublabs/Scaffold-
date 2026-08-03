@@ -1,4 +1,8 @@
 import { PencilBrush, Path, Point, Circle } from "fabric";
+import {
+  buildPressureOutlinePath,
+  getPressureWidth,
+} from "./pressureStroke.js";
 
 export class PressureBrush extends PencilBrush {
   constructor(canvas) {
@@ -32,6 +36,8 @@ export class PressureBrush extends PencilBrush {
 
     const brush = new PressureBrush(canvas);
     brush.width = stroke.width ?? 3;
+    brush.minFactor = stroke.minFactor ?? brush.minFactor;
+    brush.maxFactor = stroke.maxFactor ?? brush.maxFactor;
 
     const points = rawPoints.map(([x, y]) => new Point(x, y));
     const pressures = Array.isArray(stroke.pressures)
@@ -63,6 +69,8 @@ export class PressureBrush extends PencilBrush {
       pressures,
       color,
       width: brush.width,
+      minFactor: brush.minFactor,
+      maxFactor: brush.maxFactor,
     };
 
     return object;
@@ -75,7 +83,12 @@ export class PressureBrush extends PencilBrush {
   }
 
   _widthFor(pressure) {
-    return this.width * (this.minFactor + (this.maxFactor - this.minFactor) * pressure);
+    return getPressureWidth(
+      this.width,
+      pressure,
+      this.minFactor,
+      this.maxFactor,
+    );
   }
 
   onMouseDown(pointer, options) {
@@ -170,6 +183,8 @@ export class PressureBrush extends PencilBrush {
       pressures: this._pressures.slice(0, points.length),
       color: this.color,
       width: this.width,
+      minFactor: this.minFactor,
+      maxFactor: this.maxFactor,
     };
 
     canvas.clearContext(canvas.contextTop);
@@ -182,31 +197,10 @@ export class PressureBrush extends PencilBrush {
   }
 
   _buildOutlinePath(points, pressures) {
-    const n = points.length;
-    const left = [];
-    const right = [];
-
-    for (let i = 0; i < n; i++) {
-      const prev = points[i === 0 ? 0 : i - 1];
-      const next = points[i === n - 1 ? n - 1 : i + 1];
-      let tx = next.x - prev.x;
-      let ty = next.y - prev.y;
-      const len = Math.hypot(tx, ty) || 1;
-      tx /= len;
-      ty /= len;
-      const nx = -ty;
-      const ny = tx;
-
-      const h = this._widthFor(pressures[i] ?? 0.5) / 2;
-      left.push(new Point(points[i].x + nx * h, points[i].y + ny * h));
-      right.push(new Point(points[i].x - nx * h, points[i].y - ny * h));
-    }
-
-    const cmds = [];
-    cmds.push(["M", left[0].x, left[0].y]);
-    for (let i = 1; i < n; i++) cmds.push(["L", left[i].x, left[i].y]);
-    for (let i = n - 1; i >= 0; i--) cmds.push(["L", right[i].x, right[i].y]);
-    cmds.push(["Z"]);
-    return cmds;
+    return buildPressureOutlinePath(points, pressures, {
+      width: this.width,
+      minFactor: this.minFactor,
+      maxFactor: this.maxFactor,
+    });
   }
 }

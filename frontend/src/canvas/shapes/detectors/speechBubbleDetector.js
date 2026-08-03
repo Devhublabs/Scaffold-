@@ -6,6 +6,7 @@ import {
   isClosedShape,
   normalizeAngle,
   pathLength,
+  smoothClosedPath,
 } from "../utils/index.js";
 
 const MINIMUM_POINT_COUNT = 10;
@@ -14,14 +15,14 @@ const RESAMPLE_COUNT = 64;
 const TURN_SAMPLE_OFFSET = 2;
 const TAIL_HALF_WINDOW = 6;
 const MINIMUM_SHARP_TURN = Math.PI / 7;
-const MINIMUM_LOCALIZED_SHARP_FRACTION = 0.6;
+const MINIMUM_LOCALIZED_SHARP_FRACTION = 0.45;
 const MINIMUM_TAIL_EXTENSION = 1.1;
 const MAXIMUM_TAIL_EXTENSION = 2.5;
 const FULL_CONFIDENCE_TAIL_EXTENSION = 1.6;
 const MAXIMUM_BODY_ERROR = 0.3;
 const MINIMUM_CLOSURE_THRESHOLD = 4;
-const MAXIMUM_CLOSURE_THRESHOLD = 20;
-const CLOSURE_SCALE_RATIO = 0.12;
+const MAXIMUM_CLOSURE_THRESHOLD = 96;
+const CLOSURE_SCALE_RATIO = 0.25;
 const MINIMUM_CONFIDENCE = 0.7;
 
 /**
@@ -65,12 +66,13 @@ export function detectSpeechBubble(points) {
   }
 
   const sampledPoints = resampleClosedPath(points, RESAMPLE_COUNT);
+  const analysisPoints = smoothClosedPath(sampledPoints, 1);
 
-  if (sampledPoints === null) {
+  if (analysisPoints === null) {
     return null;
   }
 
-  const turns = calculateTurns(sampledPoints);
+  const turns = calculateTurns(analysisPoints);
 
   if (turns === null) {
     return null;
@@ -97,7 +99,7 @@ export function detectSpeechBubble(points) {
         candidate.index,
         sharpest.index,
         TAIL_HALF_WINDOW,
-        sampledPoints.length,
+        analysisPoints.length,
       ),
     )
     .reduce((sum, candidate) => sum + candidate.turn, 0);
@@ -107,13 +109,13 @@ export function detectSpeechBubble(points) {
     return null;
   }
 
-  const bodyPoints = sampledPoints.filter(
+  const bodyPoints = analysisPoints.filter(
     (_, index) =>
       !isWithinCircularWindow(
         index,
         sharpest.index,
         TAIL_HALF_WINDOW,
-        sampledPoints.length,
+        analysisPoints.length,
       ),
   );
   const bodyBounds = boundingBox(bodyPoints);
@@ -141,7 +143,7 @@ export function detectSpeechBubble(points) {
   }
 
   const tail = findTailTip(
-    sampledPoints,
+    analysisPoints,
     sharpest.index,
     bodyGeometry,
     TAIL_HALF_WINDOW,

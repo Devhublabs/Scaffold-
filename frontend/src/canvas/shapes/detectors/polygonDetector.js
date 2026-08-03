@@ -5,6 +5,7 @@ import {
   isClosedShape,
   normalizeAngle,
   pathLength,
+  smoothClosedPath,
 } from "../utils/index.js";
 
 const MINIMUM_POINT_COUNT = 6;
@@ -20,8 +21,8 @@ const EDGE_DEVIATION_TOLERANCE_RATIO = 0.18;
 const MINIMUM_SIDES = 3;
 const MAXIMUM_SIDES = 12;
 const MINIMUM_CLOSURE_THRESHOLD = 4;
-const MAXIMUM_CLOSURE_THRESHOLD = 20;
-const CLOSURE_SCALE_RATIO = 0.12;
+const MAXIMUM_CLOSURE_THRESHOLD = 96;
+const CLOSURE_SCALE_RATIO = 0.25;
 const MINIMUM_CONFIDENCE = 0.72;
 
 /**
@@ -69,12 +70,13 @@ export function detectPolygon(points) {
   }
 
   const sampledPoints = resampleClosedPath(points, RESAMPLE_COUNT);
+  const analysisPoints = smoothClosedPath(sampledPoints, 1);
 
-  if (sampledPoints === null) {
+  if (analysisPoints === null) {
     return null;
   }
 
-  const turns = calculateTurns(sampledPoints);
+  const turns = calculateTurns(analysisPoints);
 
   if (turns === null) {
     return null;
@@ -89,7 +91,7 @@ export function detectPolygon(points) {
     return null;
   }
 
-  const edgeScore = calculateEdgeConsistency(sampledPoints, cornerIndices);
+  const edgeScore = calculateEdgeConsistency(analysisPoints, cornerIndices);
   const cornerScore = calculateCornerScore(turns, cornerIndices);
   const turnConcentration = calculateTurnConcentration(turns, cornerIndices);
 
@@ -114,7 +116,7 @@ export function detectPolygon(points) {
     confidence,
     metadata: {
       sides: cornerIndices.length,
-      corners: cornerIndices.map((index) => ({ ...sampledPoints[index] })),
+      corners: cornerIndices.map((index) => ({ ...analysisPoints[index] })),
     },
   };
 }

@@ -29,6 +29,7 @@
 │   │   │   ├── co_artist.py
 │   │   │   ├── __init__.py
 │   │   │   ├── __pycache__
+│   │   │   │   ├── co_artist.cpython-312.pyc
 │   │   │   │   ├── __init__.cpython-312.pyc
 │   │   │   │   └── voice.cpython-312.pyc
 │   │   │   └── voice.py
@@ -45,15 +46,25 @@
 │   │   │   ├── co_artist_service.py
 │   │   │   ├── __init__.py
 │   │   │   ├── __pycache__
+│   │   │   │   ├── auth_service.cpython-312.pyc
 │   │   │   │   ├── canvas_service.cpython-312.pyc
+│   │   │   │   ├── co_artist_service.cpython-312.pyc
 │   │   │   │   ├── __init__.cpython-312.pyc
 │   │   │   │   ├── room_service.cpython-312.pyc
+│   │   │   │   ├── skeleton_service.cpython-312.pyc
 │   │   │   │   └── voice_service.cpython-312.pyc
 │   │   │   ├── room_service.py
 │   │   │   ├── skeleton
 │   │   │   │   ├── fk.py
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── proportions_resolver.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── fk.cpython-312.pyc
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   ├── proportions_resolver.cpython-312.pyc
+│   │   │   │   │   ├── rig.cpython-312.pyc
+│   │   │   │   │   ├── silhouette.cpython-312.pyc
+│   │   │   │   │   └── volumes.cpython-312.pyc
 │   │   │   │   ├── rig.py
 │   │   │   │   ├── silhouette.py
 │   │   │   │   └── volumes.py
@@ -77,6 +88,7 @@
 │       │   ├── test_canvas_persistence.cpython-312.pyc
 │       │   ├── test_canvas_service.cpython-312.pyc
 │       │   ├── test_room_service.cpython-312.pyc
+│       │   ├── test_socket_auth.cpython-312.pyc
 │       │   └── test_sockets.cpython-312.pyc
 │       ├── test_auth_service.py
 │       ├── test_canvas_persistence.py
@@ -99,8 +111,8 @@
 ├── frontend
 │   ├── dist
 │   │   ├── assets
-│   │   │   ├── index-CeGIOQk8.css
-│   │   │   └── index-DcCJRWM9.js
+│   │   │   ├── index-BAsKSi4l.js
+│   │   │   └── index-CgC7O08b.css
 │   │   └── index.html
 │   ├── Dockerfile
 │   ├── eslint.config.js
@@ -114,10 +126,16 @@
 │   │   ├── canvas
 │   │   │   ├── brushes
 │   │   │   │   ├── EraserBrush.js
-│   │   │   │   └── PressureBrush.js
+│   │   │   │   ├── PressureBrush.js
+│   │   │   │   └── pressureStroke.js
+│   │   │   ├── canvasObjects.js
+│   │   │   ├── canvasObjects.test.js
 │   │   │   ├── components
 │   │   │   │   └── Canvas.jsx
 │   │   │   ├── history
+│   │   │   │   └── CanvasHistory.js
+│   │   │   ├── pathCreatedHandler.js
+│   │   │   ├── pathCreatedHandler.test.js
 │   │   │   ├── shapes
 │   │   │   │   ├── constants
 │   │   │   │   │   └── ShapeType.js
@@ -141,16 +159,36 @@
 │   │   │   │   │   ├── fitStar.js
 │   │   │   │   │   ├── fitters.test.js
 │   │   │   │   │   └── fitUtils.js
+│   │   │   │   ├── freeform
+│   │   │   │   │   └── smoothFreeformStroke.js
 │   │   │   │   ├── ShapeFactory.js
+│   │   │   │   ├── snapCreatedPath.js
+│   │   │   │   ├── snapCreatedPath.test.js
 │   │   │   │   ├── snapToShape.js
+│   │   │   │   ├── snapToShape.realistic.test.js
+│   │   │   │   ├── snapToShape.test.js
 │   │   │   │   └── utils
 │   │   │   │       ├── angle.js
 │   │   │   │       ├── boundingBox.js
 │   │   │   │       ├── distance.js
 │   │   │   │       ├── geometry.js
-│   │   │   │       └── index.js
+│   │   │   │       ├── index.js
+│   │   │   │       └── resample.js
 │   │   │   ├── templates
-│   │   │   └── tools
+│   │   │   ├── tools
+│   │   │   └── transform
+│   │   │       ├── CanvasHistory.test.js
+│   │   │       ├── index.js
+│   │   │       ├── keyboardShortcuts.js
+│   │   │       ├── keyboardShortcuts.test.js
+│   │   │       ├── TransformEvents.js
+│   │   │       ├── TransformEvents.test.js
+│   │   │       ├── TransformManager.js
+│   │   │       ├── TransformManager.test.js
+│   │   │       ├── TransformState.js
+│   │   │       ├── TransformState.test.js
+│   │   │       ├── transformUtils.js
+│   │   │       └── transformUtils.test.js
 │   │   ├── components
 │   │   ├── constants
 │   │   ├── context
@@ -178,6 +216,7 @@
 │   └── vite.config.js
 ├── LICENSE
 ├── README.md
+├── SCAFFOLD_AI_CONTEXT.md
 └── structure.txt
 
-62 directories, 119 files
+65 directories, 155 files

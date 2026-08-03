@@ -6,6 +6,7 @@ import {
   isClosedShape,
   normalizeAngle,
   pathLength,
+  smoothClosedPath,
 } from "../utils/index.js";
 
 const MINIMUM_POINT_COUNT = 10;
@@ -19,8 +20,8 @@ const MINIMUM_RADIAL_SEPARATION = 0.15;
 const MAXIMUM_RADIAL_VARIATION = 0.2;
 const MAXIMUM_ANGULAR_VARIATION = 0.3;
 const MINIMUM_CLOSURE_THRESHOLD = 4;
-const MAXIMUM_CLOSURE_THRESHOLD = 20;
-const CLOSURE_SCALE_RATIO = 0.12;
+const MAXIMUM_CLOSURE_THRESHOLD = 96;
+const CLOSURE_SCALE_RATIO = 0.25;
 const MINIMUM_CONFIDENCE = 0.72;
 
 /**
@@ -64,24 +65,25 @@ export function detectStar(points) {
   }
 
   const sampledPoints = resampleClosedPath(points, RESAMPLE_COUNT);
+  const analysisPoints = smoothClosedPath(sampledPoints, 1);
 
-  if (sampledPoints === null) {
+  if (analysisPoints === null) {
     return null;
   }
 
-  const turns = calculateTurns(sampledPoints);
+  const turns = calculateTurns(analysisPoints);
 
   if (turns === null) {
     return null;
   }
 
-  const center = centroid(sampledPoints);
+  const center = centroid(analysisPoints);
 
   if (center === null) {
     return null;
   }
 
-  const cornerIndices = selectCornerIndices(turns, sampledPoints, center);
+  const cornerIndices = selectCornerIndices(turns, analysisPoints, center);
 
   if (
     cornerIndices === null ||
@@ -93,7 +95,7 @@ export function detectStar(points) {
   }
 
   const radialPattern = analyzeRadialPattern(
-    sampledPoints,
+    analysisPoints,
     cornerIndices,
     center,
   );
@@ -103,7 +105,7 @@ export function detectStar(points) {
   }
 
   const angularScore = calculateAngularSymmetry(
-    sampledPoints,
+    analysisPoints,
     radialPattern.outerIndices,
     center,
   );

@@ -207,7 +207,6 @@ def register_events(sio):
             "points": data.get("points"),
             "color": data.get("color", "#000000"),
             "width": data.get("width", 3),
-            "pressures": data.get("pressures", [])
         }, room=session["roomId"], skip_sid=sid)
 
     @sio.event
@@ -220,4 +219,3 @@ def register_events(sio):
             "userId": session["userId"],
             "payload": data.get("payload")
         }, room=session["roomId"], skip_sid=sid)
-

@@ -44,7 +44,9 @@ export function fitEllipse(points, detection) {
     Number.isFinite(metadata?.minorAxis) && metadata.minorAxis > 0
       ? metadata.minorAxis / 2
       : axes.radiusY;
-  let angle = axes.angle;
+  let angle = Number.isFinite(metadata?.angle)
+    ? metadata.angle
+    : axes.angle;
 
   if (radiusY > radiusX) {
     [radiusX, radiusY] = [radiusY, radiusX];

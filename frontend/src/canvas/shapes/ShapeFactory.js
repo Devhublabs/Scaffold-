@@ -1,4 +1,5 @@
 import * as fabric from "fabric";
+import { buildPressureOutlinePath } from "../brushes/pressureStroke.js";
 
 const DEFAULT_STROKE = "#000000";
 const DEFAULT_FILL = "transparent";
@@ -345,6 +346,52 @@ export function createStar(geometry, options = {}) {
     vertices,
     createPrimitiveOptions(options),
   );
+}
+
+/**
+ * Create a pressure-aware Fabric path from smoothed freeform geometry.
+ *
+ * @param {{
+ *   points: Array<{ x: number, y: number }>,
+ *   pressures: Array<number>,
+ *   color?: string,
+ *   width: number,
+ *   minFactor?: number,
+ *   maxFactor?: number
+ * }} geometry - Smoothed centerline and pressure data.
+ * @param {object} [options={}] - Fabric object options.
+ * @returns {fabric.Path|null} Pressure outline path, or null for invalid geometry.
+ */
+export function createFreeformPath(geometry, options = {}) {
+  const pathData = buildPressureOutlinePath(
+    geometry?.points,
+    geometry?.pressures,
+    {
+      width: geometry?.width,
+      minFactor: geometry?.minFactor,
+      maxFactor: geometry?.maxFactor,
+    },
+  );
+
+  if (pathData === null) {
+    return null;
+  }
+
+  const color =
+    geometry?.color ??
+    options.fill ??
+    options.stroke ??
+    DEFAULT_STROKE;
+
+  return new fabric.Path(pathData, {
+    selectable: true,
+    evented: true,
+    objectCaching: true,
+    ...options,
+    fill: color,
+    stroke: null,
+    strokeWidth: 0,
+  });
 }
 
 /**

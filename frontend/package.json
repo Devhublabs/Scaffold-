@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node src/canvas/shapes/fitters/fitters.test.js",
+    "test": "node --test src/canvas/canvasObjects.test.js src/canvas/pathCreatedHandler.test.js src/canvas/shapes/snapCreatedPath.test.js src/canvas/shapes/snapToShape.test.js src/canvas/shapes/snapToShape.realistic.test.js src/canvas/shapes/fitters/fitters.test.js src/canvas/transform/*.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

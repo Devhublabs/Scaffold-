@@ -64,10 +64,11 @@ const FACTORIES = Object.freeze({
  * or modify layer state.
  *
  * @param {Array<{ x: number, y: number }>} points - Ordered stroke points.
+ * @param {object} [options={}] - Fabric options forwarded to ShapeFactory.
  * @returns {object|null} Fabric object produced by ShapeFactory, or null when
  * input validation, detection, fitting, or object creation fails.
  */
-export function snapToShape(points) {
+export function snapToShape(points, options = {}) {
   if (!isValidStroke(points)) {
     return null;
   }
@@ -99,7 +100,7 @@ export function snapToShape(points) {
       return null;
     }
 
-    return factory(geometry) ?? null;
+    return factory(geometry, options) ?? null;
   } catch {
     return null;
   }
